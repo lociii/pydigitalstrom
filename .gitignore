@@ -1,0 +1,6 @@
+*.pyc
+.idea/
+.pycharm_helpers/
+dist/
+*.egg-info/
+build/
