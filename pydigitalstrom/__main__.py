@@ -1,30 +1,32 @@
 # -*- coding: UTF-8 -*-
-from clint.textui import puts, prompt
+from clint.textui import puts, prompt, colored
 
 from pydigitalstrom.authorization import DigitalStromAuthentication
 
 
 def main():
-    puts('---------------------')
-    puts('Generate an application token to access your digitalSTROM API')
-    puts('Username and password will not be stored')
-    puts('---------------------')
+    puts(colored.green('---------------------'))
+    puts(colored.green('Generate an application token to '
+                       'access your digitalSTROM API'))
+    puts(colored.green('Username and password will not be stored'))
+    puts(colored.green('---------------------'))
     puts('')
-    host = prompt.query(
-        'Please enter the hostname/ip')
-    username = prompt.query(
-        'Please enter the username')
-    password = prompt.query(
-        'Please enter the password')
+    puts(colored.yellow('Please enter the URL to your digitalSTROM server '
+                        '(e.g. https://myserver.com:8080), your username and '
+                        'password'))
+    host = prompt.query('Hostname:')
+    username = prompt.query('Username:')
+    password = prompt.query('Password:')
 
     dsauth = DigitalStromAuthentication(host)
     apptoken = dsauth.getApplicationToken()
     temptoken = dsauth.getTempToken(username, password)
     if dsauth.activateApplicationToken(apptoken, temptoken):
-        puts('Your application token is activated:')
-        puts(apptoken)
+        puts('')
+        puts(colored.green('Your application token is activated:'))
+        puts(colored.green(apptoken))
     else:
-        puts('Application token could not be activated')
+        puts(colored.red('Application token could not be activated'))
 
 
 if __name__ == "__main__":

@@ -7,7 +7,7 @@ logger = logging.getLogger(__file__)
 
 class DigitalStromAuthentication(object):
     URL_APPTOKEN = '%s/json/system/requestApplicationToken?applicationName=' \
-                   'digitalstromAlexaIntegration'
+                   'pydigitalstrom'
     URL_TEMPTOKEN = '%s/json/system/login?user=%s&password=%s'
     URL_ACTIVATE = '%s/json/system/enableToken?applicationToken=%s&token=%s'
     URL_SESSIONTOKEN = '%s/json/system/loginApplication?loginToken=%s'
@@ -43,6 +43,6 @@ class DigitalStromAuthentication(object):
 
     def request(self, url):
         response = requests.get(url, verify=False)
-        logger.error(response.status_code)
-        logger.error(response.text)
+        if not response.status_code == 200:
+            raise Exception(response.text)
         return response.json()
