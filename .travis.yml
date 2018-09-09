@@ -2,10 +2,6 @@ sudo: false
 
 language: python
 
-python:
-  - 3.5.5
-  - 3.6
-
 matrix:
   fast_finish: true
   include:
@@ -15,7 +11,7 @@ matrix:
       env: TOXENV=lint
     - python: 3.5.5
       env: TOXENV=cov
-    - python: 3.6
+    - python: 3.6.3
       env: TOXENV=py36
     - python: 3.7
       dist: xenial
@@ -49,7 +45,8 @@ jobs:
   include:
   - stage: deploy
     script: skip
-    env: 
+    python: 3.5.5
+    env:
     deploy:
       provider: pypi
       distributions: sdist
