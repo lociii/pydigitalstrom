@@ -1,9 +1,11 @@
 [run]
 branch = true
-
-[report]
+include =
+    ./*
 omit =
     *site-packages*
     *tests*
     *.tox*
+
+[report]
 show_missing = True
