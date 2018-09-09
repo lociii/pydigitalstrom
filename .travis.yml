@@ -2,34 +2,8 @@ sudo: false
 
 language: python
 
-matrix:
-  fast_finish: true
-  include:
-    - python: 3.5.5
-      env: TOXENV=py35
-    - python: 3.5.5
-      env: TOXENV=lint
-    - python: 3.5.5
-      env: TOXENV=cov
-    - python: 3.6.3
-      env: TOXENV=py36
-    - python: 3.7
-      dist: xenial
-      sudo: true
-      env: TOXENV=py37
-    - python: 3.8-dev
-      dist: xenial
-      sudo: true
-      env: TOXENV=py38
-  allow_failures:
-    - python: 3.8-dev
-      env: TOXENV=py38
-      dist: xenial
-
-install:
+before_install:
 - pip install -U tox coveralls
-
-script: travis_wait 30 tox --develop
 
 after_success:
   - coveralls
@@ -43,6 +17,34 @@ stages:
 
 jobs:
   include:
+  - stage: test
+    python: 3.5.5
+    env: TOXENV=py35
+    script: travis_wait 30 tox --develop
+  - stage: test
+    python: python: 3.5.5
+    env: TOXENV=lint
+    script: travis_wait 30 tox --develop
+  - stage: test
+    python: 3.5.5
+    env: TOXENV=cov
+    script: travis_wait 30 tox --develop
+  - stage: test
+    python: 3.6.3
+    env: TOXENV=py36
+    script: travis_wait 30 tox --develop
+  - stage: test
+    python: 3.7
+    dist: xenial
+    sudo: true
+    env: TOXENV=py37
+    script: travis_wait 30 tox --develop
+  - stage: test
+    python: 3.8-dev
+    dist: xenial
+    sudo: true
+    env: TOXENV=py38
+    script: travis_wait 30 tox --develop
   - stage: deploy
     script: skip
     python: 3.5.5
@@ -55,3 +57,5 @@ jobs:
         secure: O8jsxdhaKaAmwRwVFoEDwSv1tRsefGqAhef7RrqH+stxjsvavxZwEaaYkbJFq4iO21vfU/pbVZgcX4nu+zp/jaX04nBdIMdjKqV1WFHYKn3DpzPglnvOGPnwOdPqqynNuHoaIROBlN8UcoTZ5GXp3BUM92pdIIiv+JmzEVWJ+K3e5taO7hcByepMowtvHsqnvXXxAe8GSxfTeTnwgJUovurUCDxQsBq1F4IcARwpVhYaOkB8AJYZz+7oeYgB9t3B0Ue1N6JfMbjnqsoTKA79YTE2Z/WNBlvNWqdQkreWJijD9Jvjz4TANHOniDdBBquMme3a/KZ57H/krgKrnGdgCieaghbwCWTgzs1ug5oCGle8nNB4RIeI3JkYLJbsw+Jig9ZrC5HiC24Dl99vPo697MeGUG72ShZRy68/k58J2LCi77bIDsjf1IYaNeaeybsvxiqzZO7NgEXTaz4XczPYonsv0tCaR+iX4/y7ZydAXUP5mzRpknr61MIopTYcG3xfT6f/OxLeztzk9nIVnJTIdAj2G2NVtMCNGUmppEMU1a2UfUgr28tDoQ57L3mknXL5EsVEWiX1TO7Ml45cQRxOJ0azzCvCKVo1PhBmhWAiR/aNRTQ28QkeTh4FJLVATjyutAaBpQocRM9Ba5WAi2d/1+NXz6JgEEhIhABEa4dIb4M=
       on:
         tags: true
+  allow_failures:
+    - python: 3.8-dev
