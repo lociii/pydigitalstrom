@@ -2,18 +2,14 @@ sudo: false
 
 language: python
 
-before_install:
+python:
+  - 3.5.5
+  - 3.6.3
+  - 3.7
+  - 3.8-dev
+
+install:
   - pip install -U tox coveralls
-
-after_success:
-  - coveralls
-
-cache:
-  pip: true
-
-stages:
-  - test
-  - deploy
 
 jobs:
   include:
@@ -21,6 +17,7 @@ jobs:
       python: 3.5.5
       env: TOXENV=py35
       script: travis_wait 30 tox --develop
+      after_success: coveralls
     - stage: test
       python: python: 3.5.5
       env: TOXENV=lint
