@@ -19,7 +19,7 @@ jobs:
       script: travis_wait 30 tox --develop
       after_success: coveralls
     - stage: test
-      python: python: 3.5.5
+      python: 3.5.5
       env: TOXENV=lint
       script: travis_wait 30 tox --develop
     - stage: test
