@@ -8,15 +8,15 @@ install:
 jobs:
   include:
     - stage: test
-      python: 3.5.5
+      python: 3.5.6
       env: TOXENV=py35
       script: travis_wait 30 tox --develop
     - stage: test
-      python: 3.5.5
+      python: 3.5.6
       env: TOXENV=lint
       script: travis_wait 30 tox --develop
     - stage: test
-      python: 3.5.5
+      python: 3.5.6
       env: TOXENV=cov
       script: travis_wait 30 tox --develop
       after_success: coveralls
@@ -25,7 +25,7 @@ jobs:
       env: TOXENV=py36
       script: travis_wait 30 tox --develop
     - stage: test
-      python: 3.7
+      python: 3.7.0
       dist: xenial
       sudo: true
       env: TOXENV=py37
@@ -38,7 +38,7 @@ jobs:
       script: travis_wait 30 tox --develop
     - stage: deploy
       script: skip
-      python: 3.5.5
+      python: 3.5.6
       env:
       deploy:
         provider: pypi
