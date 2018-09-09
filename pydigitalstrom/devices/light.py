@@ -12,13 +12,18 @@ class DSLight(DSTerminal):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._brightness = None
         self._state = self._data['on']
+        self._brightness = None
         self._is_dimmable = False
 
         # large light devices cannot dim / mode 16 is switched output
-        if self._data['hwFunction'] != 'KL' and self._data['outputMode'] != 16:
+        if 'hwFunction' in self._data and self._data['hwFunction'] != 'KL' and \
+                'outputMode' in self._data and self._data['outputMode'] != 16:
             self._is_dimmable = True
+
+        # device is off
+        if self._is_dimmable and not self._state:
+            self._brightness = 0
 
     def is_on(self):
         return self._state
@@ -30,7 +35,7 @@ class DSLight(DSTerminal):
         return self._is_dimmable
 
     def identify(self):
-        self.request(self.URL_IDENTIFY)
+        self.request(url=self.URL_IDENTIFY)
 
     def turn_on(self, **kwargs):
         brightness = kwargs.get('brightness', None)
@@ -38,16 +43,20 @@ class DSLight(DSTerminal):
             raise DSUnsupportedException('device does not support setting a brightness')
 
         if brightness:
-            self.request(self.URL_SET_BRIGHTNESS, brightness=brightness)
+            self.request(url=self.URL_SET_BRIGHTNESS, brightness=brightness)
             self._brightness = brightness
         else:
-            self.request(self.URL_TURN_ON)
+            self.request(url=self.URL_TURN_ON)
+            if self._is_dimmable:
+                self._brightness = 255
 
         self._state = True
 
     def turn_off(self):
-        self.request(self.URL_TURN_OFF)
+        self.request(url=self.URL_TURN_OFF)
         self._state = False
+        if self._is_dimmable:
+            self._brightness = 0
 
     def toggle(self):
         if self._state:
@@ -56,6 +65,7 @@ class DSLight(DSTerminal):
             self.turn_on()
 
     def update(self):
-        json = self.request(self.URL_UPDATE)
-        self._state = json['value'] > 0
-        self._brightness = json['value']
+        data = self.request(url=self.URL_UPDATE)
+        self._state = data['value'] > 0
+        if self._is_dimmable:
+            self._brightness = data['value']

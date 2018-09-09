@@ -1,3 +1,6 @@
 -r requirements.txt
-flake8>=2.1.0
-tox>=1.7.0
+coverage==4.5.1
+flake8==3.5.0
+tox==3.2.1
+pytest==3.8.0
+pytest-cov==2.6.0

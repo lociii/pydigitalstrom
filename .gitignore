@@ -1,7 +1,20 @@
+# python
 *.pyc
+
+# pycharm
 .idea/
 .pycharm_helpers/
-dist/
-*.egg-info/
-build/
-.tox/
+
+# Packages
+*.egg
+*.egg-info
+build
+dist
+
+# tox
+.tox
+
+# pytest
+.pytest_cache
+.cache
+.coverage
