@@ -1,9 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-import setuptools
+import os
+from setuptools import setup, find_packages
 import pydigitalstrom
 
-setuptools.setup(
+
+def requirements():
+    try:
+        return open(os.path.join(os.path.dirname(__file__), 'requirements.txt')).readlines()
+    except IOError:
+        return []
+
+
+def long_description():
+    try:
+        return open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
+    except IOError:
+        return ''
+
+
+setup(
     name=pydigitalstrom.__title__,
     version=pydigitalstrom.__version__,
     description=pydigitalstrom.__doc__,
@@ -11,12 +27,12 @@ setuptools.setup(
     author=pydigitalstrom.__author__,
     author_email=pydigitalstrom.__author_email__,
     license=pydigitalstrom.__license__,
-    long_description=open('README.md').read(),
-    entry_points={
-        'console_scripts': ['dsauth=pydigitalstrom.__main__:main']
-    },
-    packages=['pydigitalstrom'],
-    install_requires=['clint>=0.5.1'],
+    long_description=long_description(),
+    long_description_content_type='text/markdown',
+    packages=find_packages(),
+    install_requires=requirements(),
+    keywords=['digitalstrom', 'dss', 'ds'],
+    python_requires=">=3.5",
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',
