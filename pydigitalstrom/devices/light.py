@@ -23,6 +23,9 @@ class DSLight(DSTerminal):
     def is_on(self):
         return self._state
 
+    def get_brightness(self):
+        return self._brightness
+
     def is_dimmable(self):
         return self._is_dimmable
 
@@ -55,3 +58,4 @@ class DSLight(DSTerminal):
     def update(self):
         json = self.request(self.URL_UPDATE)
         self._state = json['value'] > 0
+        self._brightness = json['value']
