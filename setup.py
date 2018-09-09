@@ -19,6 +19,13 @@ def long_description():
         return ''
 
 
+def changelog():
+    try:
+        return open(os.path.join(os.path.dirname(__file__), 'CHANGELOG.md')).read()
+    except IOError:
+        return ''
+
+
 setup(
     name=pydigitalstrom.__title__,
     version=pydigitalstrom.__version__,
@@ -27,7 +34,7 @@ setup(
     author=pydigitalstrom.__author__,
     author_email=pydigitalstrom.__author_email__,
     license=pydigitalstrom.__license__,
-    long_description=long_description(),
+    long_description=long_description() + '\n\n' + changelog(),
     long_description_content_type='text/markdown',
     packages=find_packages(),
     install_requires=requirements(),

@@ -49,14 +49,6 @@ Tested devices
         <td>SW-ZW200-F</td>
         <td>Black (joker)</td>
         <td>
-            get status, turn on, turn off, toggle, update status
-        </td>
-    </tr>
-    </tr>
-        <tr>
-        <td>SW-ZW200-F</td>
-        <td>Black (joker)</td>
-        <td>
             (adaptor plug) get status, turn on, turn off, toggle, update status
         </td>
     </tr>
