@@ -1,5 +1,11 @@
+# app
+config/
+
 # testing
 test.py
+
+# system
+.bash_history
 
 # python
 *.pyc

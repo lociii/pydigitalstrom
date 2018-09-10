@@ -23,8 +23,8 @@ class DSScene(DSDevice):
 
     def turn_on(self):
         self.request(url=self.URL_TURN_ON.format(
-            zone_id=self._data['zone_id'], scene_id=self._data['scene_id']))
+            zone_id=self._data['zone_id'], scene_id=self._data['scene_id']), check_result=False)
 
     def turn_off(self):
         self.request(url=self.URL_TURN_OFF.format(
-            zone_id=self._data['zone_id'], scene_id=self._data['scene_id']))
+            zone_id=self._data['zone_id'], scene_id=self._data['scene_id']), check_result=False)

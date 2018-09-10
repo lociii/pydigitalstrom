@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.1.2] - 2018-09-10
+### Fixed
+- Some API calls should not expect a result node in response
+### Changed
+- Added more gitignores for docker env and app config
+
 ## [0.1.1] - 2018-09-10
 ### Added
 - Tests for blind, light, meter and scene

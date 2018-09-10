@@ -52,7 +52,7 @@ class TestLight(unittest.TestCase):
         device = DSLight(client=get_testclient(), data=dict(on=False, id=1))
         device.request = MagicMock()
         device.identify()
-        device.request.assert_called_with(url='/json/device/blink?dsid={id}')
+        device.request.assert_called_with(url='/json/device/blink?dsid={id}', check_result=False)
 
     def test_turn_on(self):
         device = DSLight(client=get_testclient(), data=dict(on=False, id=1))
@@ -60,7 +60,7 @@ class TestLight(unittest.TestCase):
 
         # non dimmable light
         device.turn_on()
-        device.request.assert_called_with(url='/json/device/turnOn?dsid={id}')
+        device.request.assert_called_with(url='/json/device/turnOn?dsid={id}', check_result=False)
         self.assertTrue(device._state)
         self.assertIsNone(device._brightness)
 
@@ -71,13 +71,14 @@ class TestLight(unittest.TestCase):
         # make it dimmable but turn on normally
         device._is_dimmable = True
         device.turn_on()
-        device.request.assert_called_with(url='/json/device/turnOn?dsid={id}')
+        device.request.assert_called_with(url='/json/device/turnOn?dsid={id}', check_result=False)
         self.assertTrue(device._state)
         self.assertEqual(device._brightness, 255)
 
         # set brightness
         device.turn_on(brightness=53)
-        device.request.assert_called_with(url='/device/setValue?dsid={id}&value={brightness}', brightness=53)
+        device.request.assert_called_with(url='/device/setValue?dsid={id}&value={brightness}', brightness=53,
+                                          check_result=False)
         self.assertTrue(device._state)
         self.assertEqual(device._brightness, 53)
 
@@ -85,13 +86,13 @@ class TestLight(unittest.TestCase):
         device = DSLight(client=get_testclient(), data=dict(on=False, id=1))
         device.request = MagicMock()
         device.turn_off()
-        device.request.assert_called_with(url='/json/device/turnOff?dsid={id}')
+        device.request.assert_called_with(url='/json/device/turnOff?dsid={id}', check_result=False)
         self.assertFalse(device._state)
         self.assertIsNone(device._brightness)
 
         device._is_dimmable = True
         device.turn_off()
-        device.request.assert_called_with(url='/json/device/turnOff?dsid={id}')
+        device.request.assert_called_with(url='/json/device/turnOff?dsid={id}', check_result=False)
         self.assertFalse(device._state)
         self.assertEqual(device._brightness, 0)
 

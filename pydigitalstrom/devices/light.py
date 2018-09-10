@@ -35,7 +35,7 @@ class DSLight(DSTerminal):
         return self._is_dimmable
 
     def identify(self):
-        self.request(url=self.URL_IDENTIFY)
+        self.request(url=self.URL_IDENTIFY, check_result=False)
 
     def turn_on(self, **kwargs):
         brightness = kwargs.get('brightness', None)
@@ -43,17 +43,17 @@ class DSLight(DSTerminal):
             raise DSUnsupportedException('device does not support setting a brightness')
 
         if brightness:
-            self.request(url=self.URL_SET_BRIGHTNESS, brightness=brightness)
+            self.request(url=self.URL_SET_BRIGHTNESS, brightness=brightness, check_result=False)
             self._brightness = brightness
         else:
-            self.request(url=self.URL_TURN_ON)
+            self.request(url=self.URL_TURN_ON, check_result=False)
             if self._is_dimmable:
                 self._brightness = 255
 
         self._state = True
 
     def turn_off(self):
-        self.request(url=self.URL_TURN_OFF)
+        self.request(url=self.URL_TURN_OFF, check_result=False)
         self._state = False
         if self._is_dimmable:
             self._brightness = 0

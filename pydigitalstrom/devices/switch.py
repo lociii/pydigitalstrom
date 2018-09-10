@@ -22,11 +22,11 @@ class DSSwitch(DSSwitchSensor):
     URL_TURN_OFF = '/json/device/turnOff?dsid={id}'
 
     def turn_on(self):
-        self.request(self.URL_TURN_ON)
+        self.request(self.URL_TURN_ON, check_result=False)
         self._state = True
 
     def turn_off(self):
-        self.request(self.URL_TURN_OFF)
+        self.request(self.URL_TURN_OFF, check_result=False)
         self._state = False
 
     def toggle(self):

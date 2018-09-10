@@ -23,10 +23,10 @@ class TestBlind(unittest.TestCase):
         device = DSScene(client=get_testclient(), data=dict(zone_id=1, scene_id=2))
         device.request = MagicMock()
         device.turn_on()
-        device.request.assert_called_with(url='/json/zone/callScene?id=1&sceneNumber=2')
+        device.request.assert_called_with(url='/json/zone/callScene?id=1&sceneNumber=2', check_result=False)
 
     def test_turn_off(self):
         device = DSScene(client=get_testclient(), data=dict(zone_id=1, scene_id=2))
         device.request = MagicMock()
         device.turn_off()
-        device.request.assert_called_with(url='/json/zone/undoScene?id=1&sceneNumber=2')
+        device.request.assert_called_with(url='/json/zone/undoScene?id=1&sceneNumber=2', check_result=False)
