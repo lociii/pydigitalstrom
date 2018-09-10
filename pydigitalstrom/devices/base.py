@@ -1,24 +1,14 @@
 # -*- coding: UTF-8 -*-
 from pydigitalstrom.client import DSClient
-from pydigitalstrom.exceptions import DSCommandFailedException
 
 
 class DSDevice(object):
     def __init__(self, client: DSClient, *args, **kwargs):
         self._client = client
 
-    def request(self, url, **kwargs):
-        url = url.format(**kwargs)
-        json = self._client.request(url)
-        if 'ok' not in json or not json['ok']:
-            message = 'client raised an error while executing command'
-            if 'message' in json:
-                message += ': ' + json['message']
-            raise DSCommandFailedException(message)
-
-        if 'result' in json:
-            return json['result']
-        return True
+    def request(self, url, check_result=True, **kwargs):
+        return self._client.request(
+            url=url.format(**kwargs), check_result=check_result)
 
 
 class DSTerminal(DSDevice):
@@ -43,6 +33,7 @@ class DSTerminal(DSDevice):
     def unique_id(self):
         return self._id
 
-    def request(self, url: str, **kwargs):
+    def request(self, url: str, check_result=True, **kwargs):
         kwargs.update(dict(id=self._id))
-        super().request(url=url, **kwargs)
+        return super().request(
+            url=url, check_result=check_result, **kwargs)

@@ -4,9 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-<!--
 ## [Unreleased]
--->
+### Added
+- Tests for blind, light, meter and scene
+- Add move_up, move_down and stop to blind
+### Changed
+- DSDevice and DSTerminal signature of request now allows for responses without result node
 
 ## [0.1.0] - 2018-09-09
 ### Changed

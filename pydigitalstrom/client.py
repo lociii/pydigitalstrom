@@ -112,11 +112,12 @@ class DSClient(object):
 
         return data
 
-    def request(self, url: str, **kwargs):
+    def request(self, url: str, check_result=True, **kwargs):
         """
         run an authenticated request against the digitalstrom server
 
         :param str url:
+        :param bool check_result:
         :return:
         """
         # get a session id, they time out 60 seconds after the last request, we go for 50 to be secure
@@ -126,9 +127,11 @@ class DSClient(object):
         # update last request timestamp and call api
         self.last_request = time.time()
         data = self.raw_request(url=url, params=dict(token=self.session_id), **kwargs)
-        if 'result' not in data:
-            raise DSCommandFailedException('no results in server response')
-        return data['result']
+        if check_result:
+            if 'result' not in data:
+                raise DSCommandFailedException('no result in server response')
+            data = data['result']
+        return data
 
     def get_application_token_from_server(self):
         data = self.raw_request(self.URL_APPTOKEN)
@@ -183,7 +186,7 @@ class DSClient(object):
             if 'dspSwVersion' in circuit and circuit['dspSwVersion'] == 0:
                 continue
             # only valid entries
-            if not circuit['isValid']:
+            if not circuit['isValid'] or not circuit['isPresent']:
                 continue
             self._meters[circuit['dsid']] = DSMeter(client=self, data=circuit)
 
@@ -254,7 +257,7 @@ class DSClient(object):
 
         data = self.request(url=self.URL_DEVICES)
         for device in data:
-            if not device['isPresent'] or not device['isValid']:
+            if not device['isValid'] or not device['isPresent']:
                 continue
 
             matches = re.search(r'([A-Z]{2})-([A-Z]{2,3})(\d{3})(.*)', device['hwInfo'])
