@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Comply with PEP8 formatting rules
 - BREAKING merged DSTerminal and DSDevice into DSDevice
 - BREAKING minimum required Python version is now 3.5.3
-- Docker development environment now uses Python 3.6
+- Multi version Docker environment to run full tox suite
 
 ## [0.1.2] - 2018-09-10
 ### Fixed

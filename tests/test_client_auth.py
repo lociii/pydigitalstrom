@@ -141,8 +141,9 @@ class TestClientAuth(aiounittest.AsyncTestCase):
                         apptoken = await client.get_application_token()
                         self.assertEqual(apptoken, 73622)
                         self.assertEqual(client._apptoken, 73622)
-                        mock_get_application_token_from_server.assert_called()
-                        mock_get_temp_token.assert_called()
+                        self.assertTrue(
+                            mock_get_application_token_from_server.called)
+                        self.assertTrue(mock_get_temp_token.called)
                         mock_activate_application_token.assert_called_with(
                             apptoken=73622, temptoken=36253)
                         self.assertEqual(

@@ -1,40 +1,58 @@
-FROM ubuntu:xenial
+FROM ubuntu:bionic
 
+# system settings
 ENV PYTHONUNBUFFERED 1
 ENV LC_ALL=C.UTF-8
 ARG DEBIAN_FRONTEND=noninteractive
 
+# install packages
 RUN apt-get update
-RUN apt-get install -y software-properties-common vim
-RUN add-apt-repository ppa:jonathonf/python-3.6
-RUN apt-get update
+RUN apt install -y software-properties-common vim curl git-core gcc make \
+    zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev libssl-dev wget  llvm\
+    libffi-dev build-essential libncurses5-dev libncursesw5-dev xz-utils \
+    tk-dev liblzma-dev
+RUN apt-get clean
 
-RUN apt-get -y update && apt-get -y install \
-      build-essential \
-      gcc \
-      python3.6 \
-      python3.6-dev \
-      python3-pip \
-      python3.6-venv \
-      libssl-dev \
-    && \
-    apt-get clean && \
-    mkdir /app && \
-    useradd -m app
+# create app dir and user
+RUN mkdir /app && useradd -m app
 
+# change directory
 WORKDIR /app
 
+# change user
 USER app
 
+# set home directory to environment
+ENV HOME /home/app
+
+# install and setup pyenv
+RUN git clone https://github.com/pyenv/pyenv.git ${HOME}/.pyenv
+ENV PYENV_ROOT ${HOME}/.pyenv
+ENV PATH ${PYENV_ROOT}/shims:${PYENV_ROOT}/bin:${PATH}
+
+# link requirements to container
 ADD requirements.txt /app/
 ADD requirements_test.txt /app/
 
-ENV PATH /home/app/venv/bin:${PATH}
+# install required python versions
+RUN pyenv install 3.5.3
+RUN pyenv install 3.6.6
+RUN pyenv install 3.7.0
+RUN pyenv install 3.8-dev
 
+RUN pyenv global 3.5.3 3.6.6 3.7.0 3.8-dev
+RUN pyenv rehash
+
+RUN python3.5 -m pip install pip --upgrade
 RUN python3.6 -m pip install pip --upgrade
-RUN python3.6 -m pip install wheel
+RUN python3.7 -m pip install pip --upgrade
+RUN python3.8 -m pip install pip --upgrade
 
-RUN python3.6 -m venv ~/venv && \
-    pip install -r /app/requirements_test.txt
+RUN pip3.5 install -r /app/requirements_test.txt
+RUN pip3.6 install -r /app/requirements_test.txt
+RUN pip3.7 install -r /app/requirements_test.txt
+RUN pip3.8 install -r /app/requirements_test.txt
+
+RUN pip install tox
 
 ADD . /app/
