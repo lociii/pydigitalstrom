@@ -7,16 +7,9 @@ class DSServer(DSDevice):
     URL_SYSTEM_INFO = '/json/system/version'
 
     def __init__(self, client: DSClient, data: dict, *args, **kwargs):
-        super().__init__(client=client, *args, **kwargs)
-        self._data = data
-
-    @property
-    def name(self):
-        return 'server'
-
-    @property
-    def unique_id(self):
-        return self._data['MachineID']
+        data['id'] = data['MachineID']
+        data['name'] = 'Server'
+        super().__init__(client=client, data=data, *args, **kwargs)
 
     def get_data(self):
         """
@@ -27,8 +20,10 @@ class DSServer(DSDevice):
         """
         return self._data
 
-    def update(self):
+    async def update(self):
         """
         update server meta data
         """
-        self._data = self.request(url=self.URL_SYSTEM_INFO)
+        data = await self.request(url=self.URL_SYSTEM_INFO)
+        self._data.update(data)
+        self._data['id'] = self._data['MachineID']

@@ -1,32 +1,42 @@
 # -*- coding: UTF-8 -*-
-import unittest
-from unittest.mock import MagicMock
+import aiounittest
+from unittest.mock import Mock, patch
 
 from pydigitalstrom.devices.scene import DSScene
 from tests.common import get_testclient
 
 
-class TestBlind(unittest.TestCase):
+class TestScene(aiounittest.AsyncTestCase):
     def test_initial(self):
-        device = DSScene(client=get_testclient(), data=dict(zone_id=1, scene_id=2))
-        self.assertEqual(device._data, dict(zone_id=1, scene_id=2))
+        device = DSScene(
+            client=get_testclient(), data=dict(zone_id=1, zone_name='zone',
+                                               scene_id=2, scene_name='scene'))
+        self.assertEqual(device._data, dict(zone_id=1, zone_name='zone',
+                                            scene_id=2, scene_name='scene',
+                                            id='1.2', name='zone / scene'))
 
-    def test_name(self):
-        device = DSScene(client=get_testclient(), data=dict(zone_name='Kitchen', name='Ceiling light'))
-        self.assertEqual(device.name, 'Kitchen / Ceiling light')
+    async def test_turn_on(self):
+        with patch('pydigitalstrom.devices.scene.DSScene.request',
+                   Mock(return_value=aiounittest.futurized(dict()))) as \
+                mock_request:
+            device = DSScene(
+                client=get_testclient(), data=dict(
+                    zone_id=1, zone_name='zone',
+                    scene_id=2, scene_name='scene'))
+            await device.turn_on()
+            mock_request.assert_called_with(
+                url='/json/zone/callScene?id=1&sceneNumber=2',
+                check_result=False)
 
-    def test_unique_id(self):
-        device = DSScene(client=get_testclient(), data=dict(zone_id=1, scene_id=2))
-        self.assertEqual(device.unique_id, '1.2')
-
-    def test_turn_on(self):
-        device = DSScene(client=get_testclient(), data=dict(zone_id=1, scene_id=2))
-        device.request = MagicMock()
-        device.turn_on()
-        device.request.assert_called_with(url='/json/zone/callScene?id=1&sceneNumber=2', check_result=False)
-
-    def test_turn_off(self):
-        device = DSScene(client=get_testclient(), data=dict(zone_id=1, scene_id=2))
-        device.request = MagicMock()
-        device.turn_off()
-        device.request.assert_called_with(url='/json/zone/undoScene?id=1&sceneNumber=2', check_result=False)
+    async def test_turn_off(self):
+        with patch('pydigitalstrom.devices.scene.DSScene.request',
+                   Mock(return_value=aiounittest.futurized(dict()))) as \
+                mock_request:
+            device = DSScene(
+                client=get_testclient(), data=dict(
+                    zone_id=1, zone_name='zone',
+                    scene_id=2, scene_name='scene'))
+            await device.turn_off()
+            mock_request.assert_called_with(
+                url='/json/zone/undoScene?id=1&sceneNumber=2',
+                check_result=False)

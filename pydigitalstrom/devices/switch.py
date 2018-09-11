@@ -1,8 +1,8 @@
 # -*- coding: UTF-8 -*-
-from pydigitalstrom.devices.base import DSTerminal
+from pydigitalstrom.devices.base import DSDevice
 
 
-class DSSwitchSensor(DSTerminal):
+class DSSwitchSensor(DSDevice):
     URL_UPDATE = '/json/device/getOutputValue?dsid={id}&offset=0'
 
     def __init__(self, *args, **kwargs):
@@ -12,25 +12,25 @@ class DSSwitchSensor(DSTerminal):
     def is_on(self):
         return self._state
 
-    def update(self):
-        json = self.request(self.URL_UPDATE)
-        self._state = json['value'] > 0
+    async def update(self):
+        data = await self.request(url=self.URL_UPDATE)
+        self._state = data['value'] > 0
 
 
 class DSSwitch(DSSwitchSensor):
     URL_TURN_ON = '/json/device/turnOn?dsid={id}'
     URL_TURN_OFF = '/json/device/turnOff?dsid={id}'
 
-    def turn_on(self):
-        self.request(self.URL_TURN_ON, check_result=False)
+    async def turn_on(self):
+        await self.request(url=self.URL_TURN_ON, check_result=False)
         self._state = True
 
-    def turn_off(self):
-        self.request(self.URL_TURN_OFF, check_result=False)
+    async def turn_off(self):
+        await self.request(url=self.URL_TURN_OFF, check_result=False)
         self._state = False
 
-    def toggle(self):
+    async def toggle(self):
         if self._state:
-            self.turn_off()
+            await self.turn_off()
         else:
-            self.turn_on()
+            await self.turn_on()

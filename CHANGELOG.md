@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.2.0] - 2018-09-11
+### Added
+- Test coverage increased
+### Changed
+- BREAKING - All things async
+- Use aiohttp to make calls and provide api-using functions as async
+- Comply with PEP8 formatting rules
+- BREAKING merged DSTerminal and DSDevice into DSDevice
+- BREAKING minimum required Python version is now 3.5.3
+- Docker development environment now uses Python 3.6
+
 ## [0.1.2] - 2018-09-10
 ### Fixed
 - Some API calls should not expect a result node in response

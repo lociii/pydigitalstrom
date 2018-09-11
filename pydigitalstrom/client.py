@@ -4,35 +4,41 @@ import os
 import re
 import time
 
-import requests
+import aiohttp
 
 from pydigitalstrom.constants import SCENES
-from pydigitalstrom.exceptions import DSException, DSCommandFailedException, DSRequestException
+from pydigitalstrom.exceptions import DSException, DSCommandFailedException, \
+    DSRequestException
 
 
 class DSClient(object):
     URL_SERVER = '/json/system/version'
     URL_METERS = '/json/apartment/getCircuits'
     URL_DEVICES = '/json/apartment/getDevices'
-    URL_ZONES_BY_METER = '/json/property/query?query=/apartment/dSMeters/*(name,dSID,dSUID,isValid)/zones/*(*)'
-    URL_SCENES = '/json/property/query2?query=/apartment/zones/*(*)/groups/*/scenes/*(*)'
+    URL_ZONES_BY_METER = '/json/property/query?query=/apartment/dSMeters/' \
+                         '*(name,dSID,dSUID,isValid)/zones/*(*)'
+    URL_SCENES = '/json/property/query2?query=/apartment/zones/*(*)/' \
+                 'groups/*/scenes/*(*)'
 
-    URL_APPTOKEN = '/json/system/requestApplicationToken?applicationName=homeassistant'
+    URL_APPTOKEN = '/json/system/requestApplicationToken?applicationName=' \
+                   'homeassistant'
     URL_TEMPTOKEN = '/json/system/login?user={username}&password={password}'
-    URL_ACTIVATE = '/json/system/enableToken?applicationToken={apptoken}&token={temptoken}'
+    URL_ACTIVATE = '/json/system/enableToken?applicationToken={apptoken}' \
+                   '&token={temptoken}'
     URL_SESSIONTOKEN = '/json/system/loginApplication?loginToken={apptoken}'
 
-    def __init__(self, host, username, password, config_path, apartment_name, *args, **kwargs):
+    def __init__(self, host, username, password, config_path, apartment_name,
+                 *args, **kwargs):
         self.host = host
         self.username = username
         self.password = password
         self._apartment_name = apartment_name
 
         self.config_path = config_path
-        self.apptoken = None
+        self._apptoken = None
 
-        self.last_request = None
-        self.session_id = None
+        self._last_request = None
+        self._session_id = None
 
         self._server = None
         self._meters = None
@@ -41,31 +47,36 @@ class DSClient(object):
         self._scenes = None
         super(DSClient).__init__(*args, **kwargs)
 
-    def get_application_token(self):
-        if self.apptoken:
-            return self.apptoken
+    async def get_application_token(self):
+        if self._apptoken:
+            return self._apptoken
 
         # try to load app token from config
         apptoken = None
         if os.path.isfile(self.config_path):
             with open(self.config_path, 'rt') as file:
-                config = json.loads(file.read())
-                if config and isinstance(config, dict) and 'apptoken' in config:
-                    apptoken = config['apptoken']
+                try:
+                    config = json.loads(file.read())
+                    if config and isinstance(config, dict) and \
+                            'apptoken' in config:
+                        apptoken = config['apptoken']
+                except json.decoder.JSONDecodeError:
+                    pass
 
         # try to validate app token
         if apptoken:
             try:
-                self.get_session_token(apptoken=apptoken)
-                self.apptoken = apptoken
-                return self.apptoken
+                await self.get_session_token(apptoken=apptoken)
+                self._apptoken = apptoken
+                return self._apptoken
             except DSException:
                 pass
 
         # get fresh app token and activate it
-        apptoken = self.get_application_token_from_server()
-        temptoken = self.get_temp_token()
-        self.activate_application_token(apptoken=apptoken, temptoken=temptoken)
+        apptoken = await self.get_application_token_from_server()
+        temptoken = await self.get_temp_token()
+        await self.activate_application_token(
+            apptoken=apptoken, temptoken=temptoken)
 
         # make sure our config directory exists
         config_dir = os.path.dirname(self.config_path)
@@ -79,15 +90,15 @@ class DSClient(object):
         with open(self.config_path, 'wt') as file:
             file.write(json.dumps(dict(apptoken=apptoken)))
 
-        self.apptoken = apptoken
-        return self.apptoken
+        self._apptoken = apptoken
+        return self._apptoken
 
-    def raw_request(self, url: str, **kwargs):
+    async def raw_request(self, url: str, **kwargs):
         """
         run a raw request against the digitalstrom server
 
         :param str url: URL path to request
-        :param dict kwargs: kwargs to be forwarded to requests.get
+        :param dict kwargs: kwargs to be forwarded to aiohttp.get
         :return: json response
         :rtype; dict
         :raises: DSRequestException
@@ -95,24 +106,30 @@ class DSClient(object):
         """
         url = '{host}{path}'.format(host=self.host, path=url)
 
-        try:
-            response = requests.get(url=url, verify=False, **kwargs)
-        except Exception:
-            raise DSRequestException('request failed')
-        if not response.status_code == 200:
-            raise DSRequestException(response.text)
+        # disable ssl verification for most servers miss valid certificates
+        async with self.get_aiohttp_session() as session:
+            try:
+                async with session.get(url=url, **kwargs) as response:
+                    # check for server errors
+                    if not response.status == 200:
+                        raise DSRequestException(response.text)
 
-        try:
-            data = response.json()
-        except Exception:
-            raise DSRequestException('invalid json received')
+                    try:
+                        data = await response.json()
+                    except json.decoder.JSONDecodeError:
+                        raise DSRequestException(
+                            'failed to json decode response')
+                    if 'ok' not in data or not data['ok']:
+                        raise DSCommandFailedException()
+                    return data
+            except aiohttp.ClientError:
+                raise DSRequestException('request failed')
 
-        if 'ok' not in data or not data['ok']:
-            raise DSCommandFailedException()
+    def get_aiohttp_session(self):
+        return aiohttp.client.ClientSession(
+            connector=aiohttp.TCPConnector(ssl=False))
 
-        return data
-
-    def request(self, url: str, check_result=True, **kwargs):
+    async def request(self, url: str, check_result=True, **kwargs):
         """
         run an authenticated request against the digitalstrom server
 
@@ -120,64 +137,69 @@ class DSClient(object):
         :param bool check_result:
         :return:
         """
-        # get a session id, they time out 60 seconds after the last request, we go for 50 to be secure
-        if not self.last_request or self.last_request < time.time() - 50:
-            self.session_id = self.get_session_token(self.get_application_token())
+        # get a session id, they time out 60 seconds after the last request,
+        # we go for 50 to be secure
+        if not self._last_request or self._last_request < time.time() - 50:
+            self._session_id = await self.get_session_token(
+                await self.get_application_token())
 
         # update last request timestamp and call api
-        self.last_request = time.time()
-        data = self.raw_request(url=url, params=dict(token=self.session_id), **kwargs)
+        self._last_request = time.time()
+        data = await self.raw_request(
+            url=url, params=dict(token=self._session_id), **kwargs)
         if check_result:
             if 'result' not in data:
                 raise DSCommandFailedException('no result in server response')
             data = data['result']
         return data
 
-    def get_application_token_from_server(self):
-        data = self.raw_request(self.URL_APPTOKEN)
+    async def get_application_token_from_server(self):
+        data = await self.raw_request(self.URL_APPTOKEN)
         if 'result' not in data or 'applicationToken' not in data['result']:
             raise DSException('invalid api response')
         return data['result']['applicationToken']
 
-    def get_temp_token(self):
-        data = self.raw_request(self.URL_TEMPTOKEN.format(
+    async def get_temp_token(self):
+        data = await self.raw_request(self.URL_TEMPTOKEN.format(
             username=self.username, password=self.password))
         if 'result' not in data or 'token' not in data['result']:
             raise DSException('invalid api response')
         return data['result']['token']
 
-    def activate_application_token(self, apptoken, temptoken):
-        self.raw_request(self.URL_ACTIVATE.format(
+    async def activate_application_token(self, apptoken, temptoken):
+        await self.raw_request(self.URL_ACTIVATE.format(
             apptoken=apptoken, temptoken=temptoken))
         return True
 
-    def get_session_token(self, apptoken):
-        data = self.raw_request(self.URL_SESSIONTOKEN.format(
+    async def get_session_token(self, apptoken):
+        data = await self.raw_request(self.URL_SESSIONTOKEN.format(
             apptoken=apptoken))
+        if 'result' not in data or 'token' not in data['result']:
+            raise DSException('invalid api response')
         return data['result']['token']
 
-    def get_server(self):
+    async def get_server(self):
         if not self._server:
-            self._initialize_server()
+            await self._initialize_server()
         return self._server
 
-    def _initialize_server(self):
+    async def _initialize_server(self):
         from pydigitalstrom.devices.server import DSServer
 
-        data = self.request(url=self.URL_SERVER)
+        data = await self.request(url=self.URL_SERVER)
         self._server = DSServer(client=self, data=data)
 
-    def get_meters(self):
+    async def get_meters(self):
         if self._meters is None:
-            self._initialize_meters()
-        return self._meters
+            await self._initialize_meters()
+        return self._meters.values()
 
-    def _initialize_meters(self):
+    async def _initialize_meters(self):
         from pydigitalstrom.devices.meter import DSMeter
 
         self._meters = dict()
 
-        data = self.request(url=self.URL_METERS)
+        data = await self.request(url=self.URL_METERS)
         if 'circuits' not in data:
             return
 
@@ -190,19 +212,19 @@ class DSClient(object):
                 continue
             self._meters[circuit['dsid']] = DSMeter(client=self, data=circuit)
 
-    def get_scenes(self):
+    async def get_scenes(self):
         if self._scenes is None:
-            self._initialize_scenes()
-        return self._scenes
+            await self._initialize_scenes()
+        return self._scenes.values()
 
-    def _initialize_scenes(self):
+    async def _initialize_scenes(self):
         from pydigitalstrom.devices.scene import DSScene
 
         self._scenes = dict()
 
         # get all zones by meter to skip ones only assigned to 3rd party meters
         ds_zones = []
-        data = self.request(url=self.URL_ZONES_BY_METER)
+        data = await self.request(url=self.URL_ZONES_BY_METER)
         if 'dSMeters' in data:
             for meter in data['dSMeters']:
                 # skip 3rd party meters
@@ -215,7 +237,7 @@ class DSClient(object):
         ds_zones = list(set(ds_zones))
 
         # get scenes
-        data = self.request(url=self.URL_SCENES)
+        data = await self.request(url=self.URL_SCENES)
         for zone in data.values():
             # skip zones only available to 3rd party meters
             if zone['ZoneID'] not in ds_zones:
@@ -232,39 +254,41 @@ class DSClient(object):
                     self._scenes['{zone}.{scene}'.format(
                         zone=zone['ZoneID'], scene=scene['scene'])] = DSScene(
                         client=self, data=dict(
-                            zone_id=zone['ZoneID'], scene_id=scene['scene'],
-                            name=scene['name'], zone_name=zone_name))
+                            zone_id=zone['ZoneID'], zone_name=zone_name,
+                            scene_id=scene['scene'], scene_name=scene['name']))
 
             # add generic system scenes
             for scene_name, scene_id in SCENES.items():
                 self._scenes['{zone}.{scene}'.format(
                     zone=zone['ZoneID'], scene=scene_id)] = DSScene(
                     client=self, data=dict(
-                        zone_id=zone['ZoneID'], scene_id=scene_id,
-                        name=scene_name, zone_name=zone_name))
+                        zone_id=zone['ZoneID'], zone_name=zone_name,
+                        scene_id=scene_id, scene_name=scene_name))
 
-    def get_devices(self):
+    async def get_devices(self):
         if self._devices is None:
-            self._initialize_devices()
+            await self._initialize_devices()
         return self._devices
 
-    def _initialize_devices(self):
+    async def _initialize_devices(self):
         from pydigitalstrom.devices.light import DSLight
         from pydigitalstrom.devices.blind import DSBlind
         from pydigitalstrom.devices.switch import DSSwitch, DSSwitchSensor
 
         self._devices = dict()
 
-        data = self.request(url=self.URL_DEVICES)
+        data = await self.request(url=self.URL_DEVICES)
         for device in data:
             if not device['isValid'] or not device['isPresent']:
                 continue
 
-            matches = re.search(r'([A-Z]{2})-([A-Z]{2,3})(\d{3})(.*)', device['hwInfo'])
+            matches = re.search(r'([A-Z]{2})-([A-Z]{2,3})(\d{3})(.*)',
+                                device['hwInfo'])
             if not matches:
                 continue
 
-            device['hwColor'], device['hwFunction'], device['hwVersion'], rubbish = matches.groups()
+            device['hwColor'], device['hwFunction'], device['hwVersion'], _ = \
+                matches.groups()
 
             """
             GE = Gelb
@@ -286,7 +310,8 @@ class DSClient(object):
 
             # light (yellow group, GE => gelb)
             # TODO support TKM, push button and light mixed devices
-            if device['hwColor'] == 'GE' and device['hwFunction'] in ('KL', 'KM'):
+            if device['hwColor'] == 'GE' and \
+                    device['hwFunction'] in ('KL', 'KM'):
                 self._devices[device['id']] = DSLight(client=self, data=device)
 
             # blinds (gray group, GR => grau)
@@ -299,59 +324,57 @@ class DSClient(object):
             if device['hwColor'] == 'SW':
                 # ZWS (adapter plug - Zwischenstecker)
                 if device['hwFunction'] == 'ZWS':
-                    self._devices[device['id']] = DSSwitch(client=self, data=device)
+                    self._devices[device['id']] = DSSwitch(
+                        client=self, data=device)
                 # TKM (push button - Tasterklemme M)
                 if device['hwFunction'] == 'TKM':
-                    self._devices[device['id']] = DSSwitchSensor(client=self, data=device)
+                    self._devices[device['id']] = DSSwitchSensor(
+                        client=self, data=device)
 
-    def get_lights(self):
+    async def get_devices_by_type(self, device_type):
+        filtered_devices = []
+        devices = await self.get_devices()
+        for device in devices.values():
+            if isinstance(device, device_type):
+                filtered_devices.append(device)
+        return filtered_devices
+
+    async def get_lights(self):
         """
         get all light devices
 
         :return: light devices
-        :rtype: Iterator[:class:`DSLight`]
+        :rtype: List[:class:`DSLight`]
         """
         from pydigitalstrom.devices.light import DSLight
+        return await self.get_devices_by_type(device_type=DSLight)
 
-        for device in self.get_devices().values():
-            if isinstance(device, DSLight):
-                yield device
-
-    def get_blinds(self):
+    async def get_blinds(self):
         """
         get all blind devices
 
         :return: blind devices
-        :rtype: Iterator[:class:`DSBlind`]
+        :rtype: List[:class:`DSBlind`]
         """
         from pydigitalstrom.devices.blind import DSBlind
+        return await self.get_devices_by_type(device_type=DSBlind)
 
-        for device in self.get_devices().values():
-            if isinstance(device, DSBlind):
-                yield device
-
-    def get_switches(self):
+    async def get_switches(self):
         """
         get all switch devices
 
         :return: switch devices
-        :rtype: Iterator[:class:`DSSwitch`]
+        :rtype: List[:class:`DSSwitch`]
         """
         from pydigitalstrom.devices.switch import DSSwitch
+        return await self.get_devices_by_type(device_type=DSSwitch)
 
-        for device in self.get_devices().values():
-            if isinstance(device, DSSwitch):
-                yield device
-
-    def get_switchsensors(self):
+    async def get_switchsensors(self):
         """
         get all switch sensor devices
 
         :return: switch sensor devices
-        :rtype: Iterator[:class:`DSSwitchSensor`]
+        :rtype: List[:class:`DSSwitchSensor`]
         """
         from pydigitalstrom.devices.switch import DSSwitchSensor
-
-        for device in self.get_devices().values():
-            if isinstance(device, DSSwitchSensor):
-                yield device
+        return await self.get_devices_by_type(device_type=DSSwitchSensor)
