@@ -1,4 +1,6 @@
 # -*- coding: UTF-8 -*-
+from pydigitalstrom.constants import OUTPUT_MODE_DIMMABLE, OUTPUT_MODE_SWITCHED, \
+    OUTPUT_MODE_RELAY_SWITCHED
 from pydigitalstrom.devices.base import DSDevice
 from pydigitalstrom.exceptions import DSUnsupportedException
 
@@ -16,14 +18,18 @@ class DSLight(DSDevice):
         self._brightness = None
         self._is_dimmable = False
 
-        # large light devices cannot dim / mode 16 is switched output
-        if 'hwFunction' in self._data and \
-            self._data['hwFunction'] != 'KL' and \
-            'outputMode' in self._data and \
-            self._data['outputMode'] != 16:
+        # mode 22 is dimmeable output
+        if self._data['outputMode'] == OUTPUT_MODE_DIMMABLE:
             self._is_dimmable = True
+        # mode 16 is switched output
+        elif self._data['outputMode'] in (
+                OUTPUT_MODE_SWITCHED, OUTPUT_MODE_RELAY_SWITCHED):
+            self._is_dimmable = False
+        else:
+            raise DSUnsupportedException(
+                'unsupported output mode %s' % self._data['outputMode'])
 
-        # device is off
+        # device is off, set default brightness
         if self._is_dimmable and not self._state:
             self._brightness = 0
 

@@ -1,12 +1,13 @@
 # -*- coding: UTF-8 -*-
 import json
 import os
-import re
 import time
 
 import aiohttp
 
-from pydigitalstrom.constants import SCENES
+from pydigitalstrom.constants import SCENE_NAMES, GROUP_LIGHT, GROUP_SHADE, \
+    OUTPUT_MODE_SWITCHED, OUTPUT_MODE_DIMMABLE, OUTPUT_MODE_RELAY_SWITCHED, \
+    OUTPUT_MODE_POSITIONING_CONTROL, GROUP_JOKER, OUTPUT_MODE_DOUBLERELAY_SINGLE
 from pydigitalstrom.exceptions import DSException, DSCommandFailedException, \
     DSRequestException
 
@@ -258,7 +259,7 @@ class DSClient(object):
                             scene_id=scene['scene'], scene_name=scene['name']))
 
             # add generic system scenes
-            for scene_name, scene_id in SCENES.items():
+            for scene_id, scene_name in SCENE_NAMES.items():
                 self._scenes['{zone}.{scene}'.format(
                     zone=zone['ZoneID'], scene=scene_id)] = DSScene(
                     client=self, data=dict(
@@ -282,54 +283,56 @@ class DSClient(object):
             if not device['isValid'] or not device['isPresent']:
                 continue
 
-            matches = re.search(r'([A-Z]{2})-([A-Z]{2,3})(\d{3})(.*)',
-                                device['hwInfo'])
-            if not matches:
-                continue
-
-            device['hwColor'], device['hwFunction'], device['hwVersion'], _ = \
-                matches.groups()
-
-            """
-            GE = Gelb
-            GR = Grau
-            SW = Schwarz
-            BL = Blau
-            GN = Gruen
-
-            KL = Klemme L
-            KM = Klemme M
-            TKM = Taster Klemme M
-            SDM = Schnurdimmer M
-            SDS = Schnurdimmer S
-            UMV = Universal Modul Volt
-            UMR = Universal Modul Relais
-            AKM - Automatisierungsklemme
-            ZWS = Zwischenstecker
-            """
-
-            # light (yellow group, GE => gelb)
-            # TODO support TKM, push button and light mixed devices
-            if device['hwColor'] == 'GE' and \
-                    device['hwFunction'] in ('KL', 'KM'):
-                self._devices[device['id']] = DSLight(client=self, data=device)
-
-            # blinds (gray group, GR => grau)
-            # TODO support TKM, push button and blind mixed devices
-            if device['hwColor'] == 'GR' and device['hwFunction'] == 'KL':
-                self._devices[device['id']] = DSBlind(client=self, data=device)
-
-            # joker (black group, SW => schwarz)
-            # TODO support AKM, automation sensor (Automatisierungsklemme)
-            if device['hwColor'] == 'SW':
-                # ZWS (adapter plug - Zwischenstecker)
-                if device['hwFunction'] == 'ZWS':
-                    self._devices[device['id']] = DSSwitch(
-                        client=self, data=device)
-                # TKM (push button - Tasterklemme M)
-                if device['hwFunction'] == 'TKM':
+            # disabled output means switch or sensor
+            if device['outputMode'] == 0:
+                # light switch
+                if GROUP_LIGHT in device['groups'] and \
+                    GROUP_JOKER in device['groups'] and \
+                        device['buttonGroupMembership'] == GROUP_LIGHT:
                     self._devices[device['id']] = DSSwitchSensor(
                         client=self, data=device)
+                    continue
+
+                # blind switch
+                if GROUP_SHADE in device['groups'] and \
+                    GROUP_JOKER in device['groups'] and \
+                        device['buttonGroupMembership'] == GROUP_SHADE:
+                    self._devices[device['id']] = DSSwitchSensor(
+                        client=self, data=device)
+                    continue
+
+                # automation thing
+                if GROUP_JOKER in device['groups'] and \
+                        device['buttonGroupMembership'] == GROUP_JOKER:
+                    self._devices[device['id']] = DSSwitchSensor(
+                        client=self, data=device)
+                continue
+            else:
+                # switched or dimmable light
+                if GROUP_LIGHT in device['groups'] and \
+                    device['outputMode'] in [
+                        OUTPUT_MODE_SWITCHED, OUTPUT_MODE_DIMMABLE,
+                        OUTPUT_MODE_RELAY_SWITCHED]:
+                    self._devices[device['id']] = DSLight(
+                        client=self, data=device)
+                    continue
+
+                # blind
+                if GROUP_SHADE in device['groups'] and \
+                    device['outputMode'] in [
+                        OUTPUT_MODE_POSITIONING_CONTROL]:
+                    self._devices[device['id']] = DSBlind(
+                        client=self, data=device)
+                    continue
+
+                # switched joker relay
+                if GROUP_JOKER in device['groups'] and \
+                        device['outputMode'] == OUTPUT_MODE_DOUBLERELAY_SINGLE:
+                    self._devices[device['id']] = DSSwitch(
+                        client=self, data=device)
+                    continue
+
+            # TODO log unknown device to be able to add support
 
     async def get_devices_by_type(self, device_type):
         filtered_devices = []

@@ -5,8 +5,11 @@ from pydigitalstrom.exceptions import DSParameterException
 
 class DSBlind(DSDevice):
     URL_UPDATE = '/json/device/getOutputValue?dsid={id}&offset=0'
+    # scene 15 => stop
     URL_ACTION_STOP = '/json/device/callScene?dsid={id}&sceneNumber=15'
+    # scene 14 => max
     URL_ACTION_UP = '/json/device/callScene?dsid={id}&sceneNumber=14'
+    # scene 13 => min
     URL_ACTION_DOWN = '/json/device/callScene?dsid={id}&sceneNumber=13'
     URL_SET_POSITION = '/json/device/setValue?dsid={id}&value={position}'
 

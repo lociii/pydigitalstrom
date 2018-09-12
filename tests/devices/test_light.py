@@ -9,45 +9,49 @@ from tests.common import get_testclient
 
 class TestLight(aiounittest.AsyncTestCase):
     def test_is_on(self):
-        device = DSLight(client=get_testclient(), data=dict(on=True, id=1))
+        device = DSLight(client=get_testclient(), data=dict(
+            on=True, id=1, outputMode=16))
         self.assertTrue(device.is_on())
 
-        device = DSLight(client=get_testclient(), data=dict(on=False, id=1))
+        device = DSLight(client=get_testclient(), data=dict(
+            on=False, id=1, outputMode=16))
         self.assertFalse(device.is_on())
 
     def test_is_dimmable(self):
         # no data provided, default is not dimmable
-        device = DSLight(client=get_testclient(), data=dict(on=False, id=1))
-        self.assertFalse(device.is_dimmable())
+        with self.assertRaises(DSUnsupportedException):
+            DSLight(client=get_testclient(), data=dict(
+                on=False, id=1, outputMode=1))
 
         # large light terminals are not dimmable
         device = DSLight(client=get_testclient(), data=dict(
-            on=False, id=1, hwFunction='KL', outputMode=1))
+            on=False, id=1, outputMode=16))
         self.assertFalse(device.is_dimmable())
 
         # output mode 16 means switched output
         device = DSLight(client=get_testclient(), data=dict(
-            on=False, id=1, hwFunction='KM', outputMode=16))
+            on=False, id=1, outputMode=16))
         self.assertFalse(device.is_dimmable())
 
         device = DSLight(client=get_testclient(), data=dict(
-            on=False, id=1, hwFunction='KM', outputMode=1))
+            on=False, id=1, outputMode=22))
         self.assertTrue(device.is_dimmable())
 
     def test_get_brightness(self):
         # non dimmable lights throw an exception
-        device = DSLight(client=get_testclient(), data=dict(on=False, id=1))
+        device = DSLight(client=get_testclient(), data=dict(
+            on=False, id=1, outputMode=16))
         with self.assertRaises(DSUnsupportedException):
             self.assertIsNone(device.get_brightness())
 
         # dimmable light is off
         device = DSLight(client=get_testclient(), data=dict(
-            on=False, id=1, hwFunction='KM', outputMode=1))
+            on=False, id=1, outputMode=22))
         self.assertEqual(device.get_brightness(), 0)
 
         # dimmable light is on, but brightness is not set by default
         device = DSLight(client=get_testclient(), data=dict(
-            on=True, id=1, hwFunction='KM', outputMode=1))
+            on=True, id=1, outputMode=22))
         self.assertIsNone(device.get_brightness())
 
         # manually set brightness
@@ -58,7 +62,8 @@ class TestLight(aiounittest.AsyncTestCase):
         with patch('pydigitalstrom.devices.light.DSLight.request',
                    Mock(return_value=aiounittest.futurized(dict()))) as \
                 mock_request:
-            device = DSLight(client=get_testclient(), data=dict(on=False, id=1))
+            device = DSLight(client=get_testclient(), data=dict(
+                on=False, id=1, outputMode=16))
             await device.identify()
             mock_request.assert_called_with(
                 url='/json/device/blink?dsid={id}', check_result=False)
@@ -67,7 +72,8 @@ class TestLight(aiounittest.AsyncTestCase):
         with patch('pydigitalstrom.devices.light.DSLight.request',
                    Mock(return_value=aiounittest.futurized(dict()))) as \
                 mock_request:
-            device = DSLight(client=get_testclient(), data=dict(on=False, id=1))
+            device = DSLight(client=get_testclient(), data=dict(
+                on=False, id=1, outputMode=16))
 
             # non dimmable light
             await device.turn_on()
@@ -100,7 +106,8 @@ class TestLight(aiounittest.AsyncTestCase):
         with patch('pydigitalstrom.devices.light.DSLight.request',
                    Mock(return_value=aiounittest.futurized(dict()))) as \
                 mock_request:
-            device = DSLight(client=get_testclient(), data=dict(on=False, id=1))
+            device = DSLight(client=get_testclient(), data=dict(
+                on=False, id=1, outputMode=16))
             await device.turn_off()
             mock_request.assert_called_with(
                 url='/json/device/turnOff?dsid={id}', check_result=False)
@@ -122,7 +129,8 @@ class TestLight(aiounittest.AsyncTestCase):
                        Mock(return_value=aiounittest.futurized(dict()))) as \
                     mock_turn_off:
                 device = DSLight(
-                    client=get_testclient(), data=dict(on=False, id=1))
+                    client=get_testclient(), data=dict(
+                        on=False, id=1, outputMode=16))
 
                 await device.toggle()
                 self.assertTrue(mock_turn_on.called)
@@ -136,7 +144,8 @@ class TestLight(aiounittest.AsyncTestCase):
                        Mock(return_value=aiounittest.futurized(dict()))) as \
                     mock_turn_off:
                 device = DSLight(
-                    client=get_testclient(), data=dict(on=True, id=1))
+                    client=get_testclient(), data=dict(
+                        on=True, id=1, outputMode=16))
 
                 await device.toggle()
                 self.assertTrue(mock_turn_off.called)
@@ -146,7 +155,8 @@ class TestLight(aiounittest.AsyncTestCase):
         with patch('pydigitalstrom.devices.light.DSLight.request',
                    Mock(return_value=aiounittest.futurized(dict(value=0)))) as \
                 mock_request:
-            device = DSLight(client=get_testclient(), data=dict(on=True, id=1))
+            device = DSLight(client=get_testclient(), data=dict(
+                on=True, id=1, outputMode=16))
             await device.update()
             mock_request.assert_called_with(
                 url='/json/device/getOutputValue?dsid={id}&offset=0')
@@ -157,7 +167,8 @@ class TestLight(aiounittest.AsyncTestCase):
         with patch('pydigitalstrom.devices.light.DSLight.request',
                    Mock(return_value=aiounittest.futurized(
                        dict(value=255)))) as mock_request:
-            device = DSLight(client=get_testclient(), data=dict(on=False, id=1))
+            device = DSLight(client=get_testclient(), data=dict(
+                on=False, id=1, outputMode=16))
             await device.update()
             mock_request.assert_called_with(
                 url='/json/device/getOutputValue?dsid={id}&offset=0')
@@ -168,7 +179,8 @@ class TestLight(aiounittest.AsyncTestCase):
         with patch('pydigitalstrom.devices.light.DSLight.request',
                    Mock(return_value=aiounittest.futurized(
                        dict(value=0)))) as mock_request:
-            device = DSLight(client=get_testclient(), data=dict(on=True, id=1))
+            device = DSLight(client=get_testclient(), data=dict(
+                on=True, id=1, outputMode=16))
             device._is_dimmable = True
             await device.update()
             mock_request.assert_called_with(
@@ -180,7 +192,8 @@ class TestLight(aiounittest.AsyncTestCase):
         with patch('pydigitalstrom.devices.light.DSLight.request',
                    Mock(return_value=aiounittest.futurized(
                        dict(value=53)))) as mock_request:
-            device = DSLight(client=get_testclient(), data=dict(on=False, id=1))
+            device = DSLight(client=get_testclient(), data=dict(
+                on=False, id=1, outputMode=16))
             device._is_dimmable = True
             await device.update()
             mock_request.assert_called_with(
