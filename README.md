@@ -92,17 +92,20 @@ Tested devices
 ```python
 # -*- coding: UTF-8 -*-
 import urllib3
+import os
 
 from pydigitalstrom.client import DSClient
 
 # disable certificate warnings - dss uses self signed
-urllib3.disable_warnings()
-config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config', 'auth.json')
-client = DSClient(host='https://dss.local:8080', username='dssadmin', password='mySuperSecretPassword',
-                  config_path=config_path, apartment_name='Apartment')
-lights = client.get_lights()
-for light in lights.values():
-    print(light.name)
-    print(light.unique_id)
-    light.turn_on()
+async def test():
+    urllib3.disable_warnings()
+    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config', 'auth.json')
+    client = DSClient(host='https://dss.local:8080', username='dssadmin', password='mySuperSecretPassword',
+                      config_path=config_path, apartment_name='Apartment')
+    await client.initialize()
+    lights = client.get_lights()
+    for light in lights.values():
+        print(light.name)
+        print(light.unique_id)
+        await light.turn_on()
 ```

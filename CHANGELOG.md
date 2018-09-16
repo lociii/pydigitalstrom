@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.3.0] - 2018-09-16
+### Added
+- Support for AreaLight, basically converted scenes 0-9 to proper light devices for the area
+- Event listener that can update the AreaLight status
+### CHanged
+- BREAKING - devices etc are now initialized by DSClient.initialize() and DSClient getter functions are not async anymore
+
 ## [0.2.0] - 2018-09-11
 ### Added
 - Test coverage increased

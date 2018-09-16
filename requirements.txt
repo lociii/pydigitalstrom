@@ -1,3 +1,4 @@
 aiohttp==3.4.4
+asyncio==3.4.3
 urllib3==1.23
 websockets==6.0

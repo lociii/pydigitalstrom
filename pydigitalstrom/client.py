@@ -20,6 +20,13 @@ class DSClient(object):
                          '*(name,dSID,dSUID,isValid)/zones/*(*)'
     URL_SCENES = '/json/property/query2?query=/apartment/zones/*(*)/' \
                  'groups/*/scenes/*(*)'
+    URL_ZONE_REACHABLE_SCENES = '/json/zone/getReachableScenes?id={id}&' \
+                                'groupID={color}'
+    URL_EVENT_SUBSCRIBE = '/json/event/subscribe?name={name}&' \
+                          'subscriptionID={id}'
+    URL_EVENT_UNSUBSCRIBE = '/json/event/unsubscribe?name={name}&' \
+                            'subscriptionID={id}'
+    URL_EVENT_POLL = '/json/event/get?subscriptionID={id}&timeout={timeout}'
 
     URL_APPTOKEN = '/json/system/requestApplicationToken?applicationName=' \
                    'homeassistant'
@@ -44,6 +51,7 @@ class DSClient(object):
         self._server = None
         self._meters = None
         self._apartment = None
+        self._area_lights = None
         self._devices = None
         self._scenes = None
         super(DSClient).__init__(*args, **kwargs)
@@ -179,9 +187,14 @@ class DSClient(object):
             raise DSException('invalid api response')
         return data['result']['token']
 
-    async def get_server(self):
-        if not self._server:
-            await self._initialize_server()
+    async def initialize(self):
+        await self._initialize_server()
+        await self._initialize_meters()
+        await self._initialize_area_lights()
+        await self._initialize_scenes()
+        await self._initialize_devices()
+
+    def get_server(self):
         return self._server
 
     async def _initialize_server(self):
@@ -190,9 +203,7 @@ class DSClient(object):
         data = await self.request(url=self.URL_SERVER)
         self._server = DSServer(client=self, data=data)
 
-    async def get_meters(self):
-        if self._meters is None:
-            await self._initialize_meters()
+    def get_meters(self):
         return self._meters.values()
 
     async def _initialize_meters(self):
@@ -213,10 +224,59 @@ class DSClient(object):
                 continue
             self._meters[circuit['dsid']] = DSMeter(client=self, data=circuit)
 
-    async def get_scenes(self):
-        if self._scenes is None:
-            await self._initialize_scenes()
+    def get_area_lights(self):
+        return self._area_lights.values()
+
+    async def _initialize_area_lights(self):
+        from pydigitalstrom.devices.arealight import DSAreaLight
+
+        self._area_lights = dict()
+        zones = await self._get_digitalstrom_zones()
+        for zone in zones:
+            # skip apartment zone
+            if zone['ZoneID'] == 0:
+                continue
+
+            reachable_scenes = await self.request(
+                self.URL_ZONE_REACHABLE_SCENES.format(
+                    id=zone['ZoneID'], color=1))
+
+            # there are 4 areas per zone
+            for area in range(0, 5):
+                # area is not used
+                if area not in reachable_scenes['reachableScenes']:
+                    continue
+
+                area_name = ''
+                for scene in reachable_scenes['userSceneNames']:
+                    if scene['sceneNr'] == area:
+                        area_name = scene['sceneName']
+
+                identifier = '{zone}.{area}.{color}'.format(
+                    zone=zone['ZoneID'], color=1, area=area)
+                self._area_lights[identifier] = DSAreaLight(
+                    client=self, data=dict(
+                        zone_id=zone['ZoneID'], area_id=area, id=identifier,
+                        zone_name=zone['name'] or self._apartment_name,
+                        area_name=area_name))
+
+    def get_scenes(self):
         return self._scenes.values()
+
+    async def _get_digitalstrom_zones(self):
+        # get all zones by meter to skip ones only assigned to 3rd party meters
+        zones = []
+        data = await self.request(url=self.URL_ZONES_BY_METER)
+        if 'dSMeters' in data:
+            for meter in data['dSMeters']:
+                # skip 3rd party meters
+                if meter['dSID'] == '':
+                    continue
+
+                if 'zones' in meter:
+                    for zone in meter['zones']:
+                        zones.append(zone)
+        return zones
 
     async def _initialize_scenes(self):
         from pydigitalstrom.devices.scene import DSScene
@@ -251,7 +311,7 @@ class DSClient(object):
 
             # add zone specific scenes
             for key, scene in zone.items():
-                if key.startswith('scene'):
+                if key.startswith('scene') and scene['scene'] >= 10:
                     self._scenes['{zone}.{scene}'.format(
                         zone=zone['ZoneID'], scene=scene['scene'])] = DSScene(
                         client=self, data=dict(
@@ -266,9 +326,7 @@ class DSClient(object):
                         zone_id=zone['ZoneID'], zone_name=zone_name,
                         scene_id=scene_id, scene_name=scene_name))
 
-    async def get_devices(self):
-        if self._devices is None:
-            await self._initialize_devices()
+    def get_devices(self):
         return self._devices
 
     async def _initialize_devices(self):
@@ -334,15 +392,15 @@ class DSClient(object):
 
             # TODO log unknown device to be able to add support
 
-    async def get_devices_by_type(self, device_type):
+    def get_devices_by_type(self, device_type):
         filtered_devices = []
-        devices = await self.get_devices()
+        devices = self.get_devices()
         for device in devices.values():
             if isinstance(device, device_type):
                 filtered_devices.append(device)
         return filtered_devices
 
-    async def get_lights(self):
+    def get_lights(self):
         """
         get all light devices
 
@@ -350,9 +408,9 @@ class DSClient(object):
         :rtype: List[:class:`DSLight`]
         """
         from pydigitalstrom.devices.light import DSLight
-        return await self.get_devices_by_type(device_type=DSLight)
+        return self.get_devices_by_type(device_type=DSLight)
 
-    async def get_blinds(self):
+    def get_blinds(self):
         """
         get all blind devices
 
@@ -360,9 +418,9 @@ class DSClient(object):
         :rtype: List[:class:`DSBlind`]
         """
         from pydigitalstrom.devices.blind import DSBlind
-        return await self.get_devices_by_type(device_type=DSBlind)
+        return self.get_devices_by_type(device_type=DSBlind)
 
-    async def get_switches(self):
+    def get_switches(self):
         """
         get all switch devices
 
@@ -370,9 +428,9 @@ class DSClient(object):
         :rtype: List[:class:`DSSwitch`]
         """
         from pydigitalstrom.devices.switch import DSSwitch
-        return await self.get_devices_by_type(device_type=DSSwitch)
+        return self.get_devices_by_type(device_type=DSSwitch)
 
-    async def get_switchsensors(self):
+    def get_switchsensors(self):
         """
         get all switch sensor devices
 
@@ -380,4 +438,41 @@ class DSClient(object):
         :rtype: List[:class:`DSSwitchSensor`]
         """
         from pydigitalstrom.devices.switch import DSSwitchSensor
-        return await self.get_devices_by_type(device_type=DSSwitchSensor)
+        return self.get_devices_by_type(device_type=DSSwitchSensor)
+
+    async def event_subscribe(self, event_id, event_name):
+        url = self.URL_EVENT_SUBSCRIBE.format(name=event_name, id=event_id)
+        await self.request(url, check_result=False)
+        return True
+
+    async def event_unsubscribe(self, event_id, event_name):
+        url = self.URL_EVENT_UNSUBSCRIBE.format(name=event_name, id=event_id)
+        await self.request(url, check_result=False)
+        return True
+
+    async def event_poll(self, event_id, timeout):
+        url = self.URL_EVENT_POLL.format(id=event_id, timeout=timeout * 1000)
+        return await self.request(url)
+
+    def handle_event(self, event):
+        if event['name'] == 'callScene':
+            arealight_id = None
+            arealight_state = None
+
+            # area off scene
+            if int(event['properties']['sceneID']) <= 4:
+                arealight_id = '{zone}.{area}.{color}'.format(
+                    zone=event['properties']['zoneID'],
+                    area=event['properties']['sceneID'],
+                    color=event['properties']['groupID'])
+                arealight_state = False
+            # area on scene
+            elif int(event['properties']['sceneID']) <= 9:
+                arealight_id = '{zone}.{area}.{color}'.format(
+                    zone=event['properties']['zoneID'],
+                    area=int(event['properties']['sceneID']) - 5,
+                    color=event['properties']['groupID'])
+                arealight_state = True
+
+            if arealight_id is not None and arealight_id in self._area_lights:
+                self._area_lights[arealight_id].set_state(arealight_state)
