@@ -1,7 +1,7 @@
 """python api client for digitalSTROM"""
 
 __title__ = 'pydigitalstrom'
-__version__ = '0.3.1'
+__version__ = '0.3.2'
 __url__ = 'https://github.com/lociii/pydigitalstrom'
 __author__ = 'Jens Nistler'
 __author_email__ = 'opensource@jensnistler.de'
