@@ -10,6 +10,7 @@ class DSAreaLight(DSDevice):
     def __init__(self, client: DSClient, data,  *args, **kwargs):
         super().__init__(client, data, *args, **kwargs)
         self._state = None
+        self._update_callbacks = []
 
         # generate device name
         self._data['name'] = self._data['zone_name']
@@ -19,8 +20,13 @@ class DSAreaLight(DSDevice):
             self._data['name'] = '{name} - {area}'.format(
                 name=self._data['name'], area=area_name)
 
-    def set_state(self, state):
+    async def set_state(self, state):
         self._state = state
+        await self.publish_update()
+
+    async def publish_update(self):
+        for callback in self._update_callbacks:
+            await callback()
 
     def is_on(self):
         return self._state
@@ -42,3 +48,6 @@ class DSAreaLight(DSDevice):
             await self.turn_off()
         elif self._state is False:
             await self.turn_on()
+
+    def register_update_callback(self, callback):
+        self._update_callbacks.append(callback)

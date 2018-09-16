@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.3.1] - 2018-09-16
+### Added
+- Support update callbacks on AreaLight
+
 ## [0.3.0] - 2018-09-16
 ### Added
 - Support for AreaLight, basically converted scenes 0-9 to proper light devices for the area

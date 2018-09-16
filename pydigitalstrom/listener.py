@@ -44,7 +44,7 @@ class DSEventListener(object):
         for event in data['events']:
             if 'name' not in event:
                 continue
-            self.client.handle_event(event=event)
+            await self.client.handle_event(event=event)
 
 
 class DSListener(object):

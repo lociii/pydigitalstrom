@@ -454,7 +454,7 @@ class DSClient(object):
         url = self.URL_EVENT_POLL.format(id=event_id, timeout=timeout * 1000)
         return await self.request(url)
 
-    def handle_event(self, event):
+    async def handle_event(self, event):
         if event['name'] == 'callScene':
             arealight_id = None
             arealight_state = None
@@ -475,4 +475,4 @@ class DSClient(object):
                 arealight_state = True
 
             if arealight_id is not None and arealight_id in self._area_lights:
-                self._area_lights[arealight_id].set_state(arealight_state)
+                await self._area_lights[arealight_id].set_state(arealight_state)
