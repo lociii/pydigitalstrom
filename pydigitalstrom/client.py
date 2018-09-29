@@ -52,6 +52,7 @@ class DSClient(object):
         self._meters = None
         self._apartment = None
         self._area_lights = None
+        self._area_blinds = None
         self._devices = None
         self._scenes = None
         super(DSClient).__init__(*args, **kwargs)
@@ -191,6 +192,7 @@ class DSClient(object):
         await self._initialize_server()
         await self._initialize_meters()
         await self._initialize_area_lights()
+        await self._initialize_area_blinds()
         await self._initialize_scenes()
         await self._initialize_devices()
 
@@ -260,6 +262,42 @@ class DSClient(object):
                         zone_name=zone['name'] or self._apartment_name,
                         area_name=area_name))
 
+    def get_area_blinds(self):
+        return self._area_blinds.values()
+
+    async def _initialize_area_blinds(self):
+        from pydigitalstrom.devices.areablind import DSAreaBlind
+
+        self._area_blinds = dict()
+        zones = await self._get_digitalstrom_zones()
+        for zone in zones:
+            # skip apartment zone
+            if zone['ZoneID'] == 0:
+                continue
+
+            reachable_scenes = await self.request(
+                self.URL_ZONE_REACHABLE_SCENES.format(
+                    id=zone['ZoneID'], color=2))
+
+            # there are 4 areas per zone
+            for area in range(0, 5):
+                # area is not used
+                if area not in reachable_scenes['reachableScenes']:
+                    continue
+
+                area_name = ''
+                for scene in reachable_scenes['userSceneNames']:
+                    if scene['sceneNr'] == area:
+                        area_name = scene['sceneName']
+
+                identifier = '{zone}.{area}.{color}'.format(
+                    zone=zone['ZoneID'], color=2, area=area)
+                self._area_blinds[identifier] = DSAreaBlind(
+                    client=self, data=dict(
+                        zone_id=zone['ZoneID'], area_id=area, id=identifier,
+                        zone_name=zone['name'] or self._apartment_name,
+                        area_name=area_name))
+
     def get_scenes(self):
         return self._scenes.values()
 
@@ -301,7 +339,7 @@ class DSClient(object):
         data = await self.request(url=self.URL_SCENES)
         for zone in data.values():
             # skip zones only available to 3rd party meters
-            if zone['ZoneID'] not in ds_zones:
+            if zone['ZoneID'] > 0 and zone['ZoneID'] not in ds_zones:
                 continue
 
             # apartment zone has no name, use provided default
