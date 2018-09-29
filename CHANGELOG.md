@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.3.3] - 2018-09-29
+### Added
+- Support for AreaBlind, basically converted scenes 0-9 to proper blind devices for the area
+
 ## [0.3.2] - 2018-09-16
 ### Changed
 - Allow passing an asyncio loop to the DSListener
