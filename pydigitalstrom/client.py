@@ -494,23 +494,29 @@ class DSClient(object):
 
     async def handle_event(self, event):
         if event['name'] == 'callScene':
-            arealight_id = None
-            arealight_state = None
+            areadevice_id = None
+            areadevice_state = None
 
             # area off scene
             if int(event['properties']['sceneID']) <= 4:
-                arealight_id = '{zone}.{area}.{color}'.format(
+                areadevice_id = '{zone}.{area}.{color}'.format(
                     zone=event['properties']['zoneID'],
                     area=event['properties']['sceneID'],
                     color=event['properties']['groupID'])
-                arealight_state = False
+                areadevice_state = False
             # area on scene
             elif int(event['properties']['sceneID']) <= 9:
-                arealight_id = '{zone}.{area}.{color}'.format(
+                areadevice_id = '{zone}.{area}.{color}'.format(
                     zone=event['properties']['zoneID'],
                     area=int(event['properties']['sceneID']) - 5,
                     color=event['properties']['groupID'])
-                arealight_state = True
+                areadevice_state = True
 
-            if arealight_id is not None and arealight_id in self._area_lights:
-                await self._area_lights[arealight_id].set_state(arealight_state)
+            # update area light
+            if areadevice_id is not None:
+                if areadevice_id in self._area_lights:
+                    await self._area_lights[areadevice_id].set_state(
+                        areadevice_state)
+                elif areadevice_id in self._area_blinds:
+                    await self._area_blinds[areadevice_id].set_is_closed(
+                        not areadevice_state)
