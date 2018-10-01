@@ -12,6 +12,7 @@ class DSEventListener(object):
         self.loop = loop
         self.is_started = False
         self._task = None
+        self._callbacks = []
 
     async def start(self):
         if not self.is_started:
@@ -38,6 +39,9 @@ class DSEventListener(object):
             await self._handle_events(data=data)
             await asyncio.sleep(self.timeout, loop=self.loop)
 
+    async def register(self, callback):
+        self._callbacks.append(callback)
+
     async def _handle_events(self, data):
         if 'events' not in data or not data['events']:
             return
@@ -45,26 +49,5 @@ class DSEventListener(object):
         for event in data['events']:
             if 'name' not in event:
                 continue
-            await self.client.handle_event(event=event)
-
-
-class DSListener(object):
-    LISTEN_FOR_EVENT = ['callScene']
-    event_id = 1
-
-    def __init__(self, client, timeout, loop=None):
-        self.client = client
-        self.event_listeners = []
-        for event_name in self.LISTEN_FOR_EVENT:
-            self.event_listeners.append(DSEventListener(
-                client=self.client, event_id=self.event_id,
-                event_name=event_name, timeout=timeout, loop=loop))
-            self.event_id += 1
-
-    async def start(self):
-        for event_listener in self.event_listeners:
-            await event_listener.start()
-
-    async def stop(self):
-        for event_listener in self.event_listeners:
-            await event_listener.stop()
+            for callback in self._callbacks:
+                await callback(event=event)

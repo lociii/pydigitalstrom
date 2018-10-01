@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.4.0] - 2018-10-01
+### Changed
+- BREAKING - this library will only support scenes from now on since device actions suck on digitalSTROM!
+- BREAKING - the DSEventListener will now forward event data to the callback instead of updating states on it's own
+
 ## [0.3.4] - 2018-09-30
 ### Added
 - Update AreaBlind state from DSListener

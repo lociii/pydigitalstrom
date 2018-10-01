@@ -20,11 +20,7 @@ class TestClientAuth(aiounittest.AsyncTestCase):
         self.assertIsNone(client._apptoken)
         self.assertIsNone(client._last_request)
         self.assertIsNone(client._session_id)
-        self.assertIsNone(client._server)
-        self.assertIsNone(client._meters)
-        self.assertIsNone(client._apartment)
-        self.assertIsNone(client._devices)
-        self.assertIsNone(client._scenes)
+        self.assertEqual(client._scenes, dict())
 
     async def test_get_application_token_from_server(self):
         with patch('pydigitalstrom.client.DSClient.raw_request',

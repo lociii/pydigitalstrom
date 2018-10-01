@@ -5,23 +5,14 @@ import time
 
 import aiohttp
 
-from pydigitalstrom.constants import SCENE_NAMES, GROUP_LIGHT, GROUP_SHADE, \
-    OUTPUT_MODE_SWITCHED, OUTPUT_MODE_DIMMABLE, OUTPUT_MODE_RELAY_SWITCHED, \
-    OUTPUT_MODE_POSITIONING_CONTROL, GROUP_JOKER, OUTPUT_MODE_DOUBLERELAY_SINGLE
+from pydigitalstrom.constants import SCENE_NAMES
 from pydigitalstrom.exceptions import DSException, DSCommandFailedException, \
     DSRequestException
 
 
 class DSClient(object):
-    URL_SERVER = '/json/system/version'
-    URL_METERS = '/json/apartment/getCircuits'
-    URL_DEVICES = '/json/apartment/getDevices'
-    URL_ZONES_BY_METER = '/json/property/query?query=/apartment/dSMeters/' \
-                         '*(name,dSID,dSUID,isValid)/zones/*(*)'
     URL_SCENES = '/json/property/query2?query=/apartment/zones/*(*)/' \
-                 'groups/*/scenes/*(*)'
-    URL_ZONE_REACHABLE_SCENES = '/json/zone/getReachableScenes?id={id}&' \
-                                'groupID={color}'
+                 'groups/*(*)/scenes/*(*)'
     URL_EVENT_SUBSCRIBE = '/json/event/subscribe?name={name}&' \
                           'subscriptionID={id}'
     URL_EVENT_UNSUBSCRIBE = '/json/event/unsubscribe?name={name}&' \
@@ -47,14 +38,8 @@ class DSClient(object):
 
         self._last_request = None
         self._session_id = None
+        self._scenes = dict()
 
-        self._server = None
-        self._meters = None
-        self._apartment = None
-        self._area_lights = None
-        self._area_blinds = None
-        self._devices = None
-        self._scenes = None
         super(DSClient).__init__(*args, **kwargs)
 
     async def get_application_token(self):
@@ -189,334 +174,95 @@ class DSClient(object):
         return data['result']['token']
 
     async def initialize(self):
-        await self._initialize_server()
-        await self._initialize_meters()
-        await self._initialize_area_lights()
-        await self._initialize_area_blinds()
-        await self._initialize_scenes()
-        await self._initialize_devices()
-
-    def get_server(self):
-        return self._server
-
-    async def _initialize_server(self):
-        from pydigitalstrom.devices.server import DSServer
-
-        data = await self.request(url=self.URL_SERVER)
-        self._server = DSServer(client=self, data=data)
-
-    def get_meters(self):
-        return self._meters.values()
-
-    async def _initialize_meters(self):
-        from pydigitalstrom.devices.meter import DSMeter
-
-        self._meters = dict()
-
-        data = await self.request(url=self.URL_METERS)
-        if 'circuits' not in data:
-            return
-
-        for circuit in data['circuits']:
-            # skip virtual devices
-            if 'dspSwVersion' in circuit and circuit['dspSwVersion'] == 0:
-                continue
-            # only valid entries
-            if not circuit['isValid'] or not circuit['isPresent']:
-                continue
-            self._meters[circuit['dsid']] = DSMeter(client=self, data=circuit)
-
-    def get_area_lights(self):
-        return self._area_lights.values()
-
-    async def _initialize_area_lights(self):
-        from pydigitalstrom.devices.arealight import DSAreaLight
-
-        self._area_lights = dict()
-        zones = await self._get_digitalstrom_zones()
-        for zone in zones:
-            # skip apartment zone
-            if zone['ZoneID'] == 0:
-                continue
-
-            reachable_scenes = await self.request(
-                self.URL_ZONE_REACHABLE_SCENES.format(
-                    id=zone['ZoneID'], color=1))
-
-            # there are 4 areas per zone
-            for area in range(0, 5):
-                # area is not used
-                if area not in reachable_scenes['reachableScenes']:
-                    continue
-
-                area_name = ''
-                for scene in reachable_scenes['userSceneNames']:
-                    if scene['sceneNr'] == area:
-                        area_name = scene['sceneName']
-
-                identifier = '{zone}.{area}.{color}'.format(
-                    zone=zone['ZoneID'], color=1, area=area)
-                self._area_lights[identifier] = DSAreaLight(
-                    client=self, data=dict(
-                        zone_id=zone['ZoneID'], area_id=area, id=identifier,
-                        zone_name=zone['name'] or self._apartment_name,
-                        area_name=area_name))
-
-    def get_area_blinds(self):
-        return self._area_blinds.values()
-
-    async def _initialize_area_blinds(self):
-        from pydigitalstrom.devices.areablind import DSAreaBlind
-
-        self._area_blinds = dict()
-        zones = await self._get_digitalstrom_zones()
-        for zone in zones:
-            # skip apartment zone
-            if zone['ZoneID'] == 0:
-                continue
-
-            reachable_scenes = await self.request(
-                self.URL_ZONE_REACHABLE_SCENES.format(
-                    id=zone['ZoneID'], color=2))
-
-            # there are 4 areas per zone
-            for area in range(0, 5):
-                # area is not used
-                if area not in reachable_scenes['reachableScenes']:
-                    continue
-
-                area_name = ''
-                for scene in reachable_scenes['userSceneNames']:
-                    if scene['sceneNr'] == area:
-                        area_name = scene['sceneName']
-
-                identifier = '{zone}.{area}.{color}'.format(
-                    zone=zone['ZoneID'], color=2, area=area)
-                self._area_blinds[identifier] = DSAreaBlind(
-                    client=self, data=dict(
-                        zone_id=zone['ZoneID'], area_id=area, id=identifier,
-                        zone_name=zone['name'] or self._apartment_name,
-                        area_name=area_name))
-
-    def get_scenes(self):
-        return self._scenes.values()
-
-    async def _get_digitalstrom_zones(self):
-        # get all zones by meter to skip ones only assigned to 3rd party meters
-        zones = []
-        data = await self.request(url=self.URL_ZONES_BY_METER)
-        if 'dSMeters' in data:
-            for meter in data['dSMeters']:
-                # skip 3rd party meters
-                if meter['dSID'] == '':
-                    continue
-
-                if 'zones' in meter:
-                    for zone in meter['zones']:
-                        zones.append(zone)
-        return zones
-
-    async def _initialize_scenes(self):
-        from pydigitalstrom.devices.scene import DSScene
-
-        self._scenes = dict()
-
-        # get all zones by meter to skip ones only assigned to 3rd party meters
-        ds_zones = []
-        data = await self.request(url=self.URL_ZONES_BY_METER)
-        if 'dSMeters' in data:
-            for meter in data['dSMeters']:
-                # skip 3rd party meters
-                if meter['dSID'] == '':
-                    continue
-
-                if 'zones' in meter:
-                    for zone in meter['zones']:
-                        ds_zones.append(zone['ZoneID'])
-        ds_zones = list(set(ds_zones))
+        from pydigitalstrom.devices.scene import DSScene, DSColorScene
 
         # get scenes
         data = await self.request(url=self.URL_SCENES)
+
+        # set name for apartment zone
+        if 'zone0' in data and 'name' in data['zone0']:
+            data['zone0']['name'] = self._apartment_name
+
+        # create scene objects
         for zone in data.values():
-            # skip zones only available to 3rd party meters
-            if zone['ZoneID'] > 0 and zone['ZoneID'] not in ds_zones:
+            # skip unnamed zones
+            if not zone['name']:
                 continue
 
-            # apartment zone has no name, use provided default
+            zone_id = zone['ZoneID']
             zone_name = zone['name']
-            if zone['ZoneID'] == 0:
-                zone_name = self._apartment_name
 
-            # add zone specific scenes
-            for key, scene in zone.items():
-                if key.startswith('scene') and scene['scene'] >= 10:
-                    self._scenes['{zone}.{scene}'.format(
-                        zone=zone['ZoneID'], scene=scene['scene'])] = DSScene(
-                        client=self, data=dict(
-                            zone_id=zone['ZoneID'], zone_name=zone_name,
-                            scene_id=scene['scene'], scene_name=scene['name']))
-
-            # add generic system scenes
+            # add generic zone scenes
             for scene_id, scene_name in SCENE_NAMES.items():
-                self._scenes['{zone}.{scene}'.format(
-                    zone=zone['ZoneID'], scene=scene_id)] = DSScene(
-                    client=self, data=dict(
-                        zone_id=zone['ZoneID'], zone_name=zone_name,
-                        scene_id=scene_id, scene_name=scene_name))
+                id = '{zone_id}.{scene_id}'.format(
+                    zone_id=zone_id, scene_id=scene_id)
+                self._scenes[id] = DSScene(
+                    client=self, zone_id=zone_id, zone_name=zone_name,
+                    scene_id=scene_id, scene_name=scene_name)
 
-    def get_devices(self):
-        return self._devices
-
-    async def _initialize_devices(self):
-        from pydigitalstrom.devices.light import DSLight
-        from pydigitalstrom.devices.blind import DSBlind
-        from pydigitalstrom.devices.switch import DSSwitch, DSSwitchSensor
-
-        self._devices = dict()
-
-        data = await self.request(url=self.URL_DEVICES)
-        for device in data:
-            if not device['isValid'] or not device['isPresent']:
-                continue
-
-            # disabled output means switch or sensor
-            if device['outputMode'] == 0:
-                # light switch
-                if GROUP_LIGHT in device['groups'] and \
-                    GROUP_JOKER in device['groups'] and \
-                        device['buttonGroupMembership'] == GROUP_LIGHT:
-                    self._devices[device['id']] = DSSwitchSensor(
-                        client=self, data=device)
+            # add area and custom named scenes
+            for zone_key, zone_value in zone.items():
+                # we're only interested in groups
+                if not str(zone_key).startswith('group'):
                     continue
 
-                # blind switch
-                if GROUP_SHADE in device['groups'] and \
-                    GROUP_JOKER in device['groups'] and \
-                        device['buttonGroupMembership'] == GROUP_SHADE:
-                    self._devices[device['id']] = DSSwitchSensor(
-                        client=self, data=device)
-                    continue
+                # remember the color
+                color = zone_value['color']
 
-                # automation thing
-                if GROUP_JOKER in device['groups'] and \
-                        device['buttonGroupMembership'] == GROUP_JOKER:
-                    self._devices[device['id']] = DSSwitchSensor(
-                        client=self, data=device)
-                continue
-            else:
-                # switched or dimmable light
-                if GROUP_LIGHT in device['groups'] and \
-                    device['outputMode'] in [
-                        OUTPUT_MODE_SWITCHED, OUTPUT_MODE_DIMMABLE,
-                        OUTPUT_MODE_RELAY_SWITCHED]:
-                    self._devices[device['id']] = DSLight(
-                        client=self, data=device)
-                    continue
+                for group_key, group_value in zone_value.items():
+                    # we're only interested in scenes
+                    if not str(group_key).startswith('scene'):
+                        continue
 
-                # blind
-                if GROUP_SHADE in device['groups'] and \
-                    device['outputMode'] in [
-                        OUTPUT_MODE_POSITIONING_CONTROL]:
-                    self._devices[device['id']] = DSBlind(
-                        client=self, data=device)
-                    continue
+                    scene_id = group_value['scene']
+                    scene_name = group_value['name']
+                    id = '{zone_id}.{color}.{scene_id}'.format(
+                        zone_id=zone_id, color=color, scene_id=scene_id)
 
-                # switched joker relay
-                if GROUP_JOKER in device['groups'] and \
-                        device['outputMode'] == OUTPUT_MODE_DOUBLERELAY_SINGLE:
-                    self._devices[device['id']] = DSSwitch(
-                        client=self, data=device)
-                    continue
+                    self._scenes[id] = DSColorScene(
+                        client=self, zone_id=zone_id, zone_name=zone_name,
+                        scene_id=scene_id, scene_name=scene_name, color=color)
 
-            # TODO log unknown device to be able to add support
-
-    def get_devices_by_type(self, device_type):
-        filtered_devices = []
-        devices = self.get_devices()
-        for device in devices.values():
-            if isinstance(device, device_type):
-                filtered_devices.append(device)
-        return filtered_devices
-
-    def get_lights(self):
-        """
-        get all light devices
-
-        :return: light devices
-        :rtype: List[:class:`DSLight`]
-        """
-        from pydigitalstrom.devices.light import DSLight
-        return self.get_devices_by_type(device_type=DSLight)
-
-    def get_blinds(self):
-        """
-        get all blind devices
-
-        :return: blind devices
-        :rtype: List[:class:`DSBlind`]
-        """
-        from pydigitalstrom.devices.blind import DSBlind
-        return self.get_devices_by_type(device_type=DSBlind)
-
-    def get_switches(self):
-        """
-        get all switch devices
-
-        :return: switch devices
-        :rtype: List[:class:`DSSwitch`]
-        """
-        from pydigitalstrom.devices.switch import DSSwitch
-        return self.get_devices_by_type(device_type=DSSwitch)
-
-    def get_switchsensors(self):
-        """
-        get all switch sensor devices
-
-        :return: switch sensor devices
-        :rtype: List[:class:`DSSwitchSensor`]
-        """
-        from pydigitalstrom.devices.switch import DSSwitchSensor
-        return self.get_devices_by_type(device_type=DSSwitchSensor)
+    def get_scenes(self):
+        return self._scenes
 
     async def event_subscribe(self, event_id, event_name):
+        """
+        subscribe to an event for event_poll
+
+        :param int event_id: id of the event
+        :param str event_name: name of the event
+        :return: success state
+        :rtype: bool
+        :raises DSRequestException: on request failure
+        """
         url = self.URL_EVENT_SUBSCRIBE.format(name=event_name, id=event_id)
         await self.request(url, check_result=False)
         return True
 
     async def event_unsubscribe(self, event_id, event_name):
+        """
+        unsubscribe from an event for event_poll
+
+        :param int event_id: id of the event
+        :param str event_name: name of the event
+        :return: success state
+        :rtype: bool
+        :raises DSRequestException: on request failure
+        """
         url = self.URL_EVENT_UNSUBSCRIBE.format(name=event_name, id=event_id)
         await self.request(url, check_result=False)
         return True
 
     async def event_poll(self, event_id, timeout):
+        """
+        poll for actions on an event
+
+        :param int event_id: id of the event
+        :param int timeout: timeout in ms
+        :return: event data
+        :rtype: dict
+        :raises DSRequestException: on request failure
+        """
         url = self.URL_EVENT_POLL.format(id=event_id, timeout=timeout * 1000)
         return await self.request(url)
-
-    async def handle_event(self, event):
-        if event['name'] == 'callScene':
-            areadevice_id = None
-            areadevice_state = None
-
-            # area off scene
-            if int(event['properties']['sceneID']) <= 4:
-                areadevice_id = '{zone}.{area}.{color}'.format(
-                    zone=event['properties']['zoneID'],
-                    area=event['properties']['sceneID'],
-                    color=event['properties']['groupID'])
-                areadevice_state = False
-            # area on scene
-            elif int(event['properties']['sceneID']) <= 9:
-                areadevice_id = '{zone}.{area}.{color}'.format(
-                    zone=event['properties']['zoneID'],
-                    area=int(event['properties']['sceneID']) - 5,
-                    color=event['properties']['groupID'])
-                areadevice_state = True
-
-            # update area light
-            if areadevice_id is not None:
-                if areadevice_id in self._area_lights:
-                    await self._area_lights[areadevice_id].set_state(
-                        areadevice_state)
-                elif areadevice_id in self._area_blinds:
-                    await self._area_blinds[areadevice_id].set_is_closed(
-                        not areadevice_state)
