@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.4.1] - 2018-10-01
+### Changed
+- Registering callbacks on the DSEventListener should not be async
+
 ## [0.4.0] - 2018-10-01
 ### Changed
 - BREAKING - this library will only support scenes from now on since device actions suck on digitalSTROM!

@@ -26,6 +26,7 @@ Currently user defined named scenes and generic scenes are supported.
 # -*- coding: UTF-8 -*-
 import urllib3
 import os
+import asyncio
 
 from pydigitalstrom.client import DSClient
 
@@ -38,7 +39,43 @@ async def test():
     await client.initialize()
     scenes = client.get_scenes()
     for scene in scenes.values():
-        print(scene.name)
         print(scene.unique_id)
+        print(scene.name)
         await scene.turn_on()
+        
+loop = asyncio.get_event_loop()
+loop.run_until_complete(test())
+```
+
+## Event listener
+
+Run an event listener to get scene call updates from digitalSTROM
+
+```python
+# -*- coding: UTF-8 -*-
+import urllib3
+import os
+import asyncio
+
+from pydigitalstrom.client import DSClient
+from pydigitalstrom.listener import DSEventListener
+
+async def callback(event):
+    print('callback called')
+    print(event)
+
+# disable certificate warnings - dss uses self signed
+async def test(loop):
+    urllib3.disable_warnings()
+    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config', 'auth.json')
+    client = DSClient(host='https://dss.local:8080', username='dssadmin', password='mySuperSecretPassword',
+                      config_path=config_path, apartment_name='Apartment')
+    listener = DSEventListener(client=client, event_id=1, event_name='callScene', timeout=1, loop=loop)
+    await listener.start()
+    listener.register(callback=callback)
+    while True:
+        await asyncio.sleep(1)
+        
+loop = asyncio.get_event_loop()
+loop.run_until_complete(test(loop=loop))
 ```

@@ -39,7 +39,7 @@ class DSEventListener(object):
             await self._handle_events(data=data)
             await asyncio.sleep(self.timeout, loop=self.loop)
 
-    async def register(self, callback):
+    def register(self, callback):
         self._callbacks.append(callback)
 
     async def _handle_events(self, data):
