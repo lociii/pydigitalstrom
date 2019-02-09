@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.5.0] - 2019-02-09
+### Changed
+- BREAKING - changed device unique_id to be underscore separated instead of dot separated
+- updated python versions and dependencies
+
 ## [0.4.1] - 2018-10-01
 ### Changed
 - Registering callbacks on the DSEventListener should not be async

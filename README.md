@@ -14,6 +14,11 @@ $ docker-compose up -d
 $ docker-compose exec python bash
 ```
 
+Run the tests locally
+```bash
+$ docker-compose run --rm python tox
+```
+
 ## Concept
 
 Since digitalSTROM is mainly build on the concept of scenes, this library also only support setting scenes.
@@ -42,7 +47,7 @@ async def test():
         print(scene.unique_id)
         print(scene.name)
         await scene.turn_on()
-        
+
 loop = asyncio.get_event_loop()
 loop.run_until_complete(test())
 ```
@@ -75,7 +80,7 @@ async def test(loop):
     listener.register(callback=callback)
     while True:
         await asyncio.sleep(1)
-        
+
 loop = asyncio.get_event_loop()
 loop.run_until_complete(test(loop=loop))
 ```

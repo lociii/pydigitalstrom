@@ -8,9 +8,9 @@ from tests.common import get_testclient
 
 
 class TestClientRawRequest(aiounittest.AsyncTestCase):
-    def test_get_aiohttp_session_disable_ssl(self):
+    async def test_get_aiohttp_session_disable_ssl(self):
         client = get_testclient()
-        session = client.get_aiohttp_session()
+        session = await client.get_aiohttp_session()
         self.assertFalse(session._connector._ssl)
 
     async def test_raw_request(self):

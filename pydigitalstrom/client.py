@@ -102,7 +102,7 @@ class DSClient(object):
         url = '{host}{path}'.format(host=self.host, path=url)
 
         # disable ssl verification for most servers miss valid certificates
-        async with self.get_aiohttp_session() as session:
+        async with await self.get_aiohttp_session() as session:
             try:
                 async with session.get(url=url, **kwargs) as response:
                     # check for server errors
@@ -120,7 +120,7 @@ class DSClient(object):
             except aiohttp.ClientError:
                 raise DSRequestException('request failed')
 
-    def get_aiohttp_session(self):
+    async def get_aiohttp_session(self):
         return aiohttp.client.ClientSession(
             connector=aiohttp.TCPConnector(ssl=False))
 
@@ -194,7 +194,7 @@ class DSClient(object):
 
             # add generic zone scenes
             for scene_id, scene_name in SCENE_NAMES.items():
-                id = '{zone_id}.{scene_id}'.format(
+                id = '{zone_id}_{scene_id}'.format(
                     zone_id=zone_id, scene_id=scene_id)
                 self._scenes[id] = DSScene(
                     client=self, zone_id=zone_id, zone_name=zone_name,
@@ -216,7 +216,7 @@ class DSClient(object):
 
                     scene_id = group_value['scene']
                     scene_name = group_value['name']
-                    id = '{zone_id}.{color}.{scene_id}'.format(
+                    id = '{zone_id}_{color}_{scene_id}'.format(
                         zone_id=zone_id, color=color, scene_id=scene_id)
 
                     self._scenes[id] = DSColorScene(

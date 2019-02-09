@@ -15,6 +15,7 @@ class TestScene(aiounittest.AsyncTestCase):
         self.assertEqual(device.zone_name, 'zone')
         self.assertEqual(device.scene_id, 2)
         self.assertEqual(device.scene_name, 'scene')
+        self.assertEqual(device.unique_id, '1_2')
 
     async def test_turn_on(self):
         with patch('pydigitalstrom.devices.scene.DSScene.request',
@@ -39,6 +40,7 @@ class TestColorScene(aiounittest.AsyncTestCase):
         self.assertEqual(device.scene_id, 2)
         self.assertEqual(device.scene_name, 'scene')
         self.assertEqual(device.color, 1)
+        self.assertEqual(device.unique_id, '1_1_2')
 
     async def test_turn_on(self):
         with patch('pydigitalstrom.devices.scene.DSColorScene.request',
