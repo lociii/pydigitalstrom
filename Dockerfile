@@ -36,7 +36,7 @@ ADD requirements_test.txt /app/
 
 # install required python versions
 RUN pyenv install 3.5.6
-RUN pyenv install 3.6.8
+RUN pyenv install 3.6.7
 RUN pyenv install 3.7.2
 RUN pyenv install 3.8-dev
 
