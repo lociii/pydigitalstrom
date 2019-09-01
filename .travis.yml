@@ -27,7 +27,7 @@ jobs:
       env: TOXENV=py37
       script: travis_wait 30 tox --develop
     - stage: test
-      python: 3.8.0b4
+      python: 3.8-dev
       dist: xenial
       sudo: true
       env: TOXENV=py38
@@ -45,4 +45,4 @@ jobs:
         on:
           tags: true
   allow_failures:
-    - python: 3.8.0b4
+    - python: 3.8-dev
