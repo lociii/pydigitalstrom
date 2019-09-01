@@ -8,37 +8,33 @@ install:
 jobs:
   include:
     - stage: test
-      python: 3.5.6
-      env: TOXENV=py35
+      python: 3.6.9
+      env: TOXENV=py36
       script: travis_wait 30 tox --develop
     - stage: test
-      python: 3.5.6
+      python: 3.6.9
       env: TOXENV=lint
       script: travis_wait 30 tox --develop
     - stage: test
-      python: 3.5.6
+      python: 3.6.9
       env: TOXENV=cov
       script: travis_wait 30 tox --develop
       after_success: coveralls
     - stage: test
-      python: 3.6.7
-      env: TOXENV=py36
-      script: travis_wait 30 tox --develop
-    - stage: test
-      python: 3.7.2
+      python: 3.7.4
       dist: xenial
       sudo: true
       env: TOXENV=py37
       script: travis_wait 30 tox --develop
     - stage: test
-      python: 3.8-dev
+      python: 3.8.0b4
       dist: xenial
       sudo: true
       env: TOXENV=py38
       script: travis_wait 30 tox --develop
     - stage: deploy
       script: skip
-      python: 3.5.6
+      python: 3.6.9
       env:
       deploy:
         provider: pypi
@@ -49,4 +45,4 @@ jobs:
         on:
           tags: true
   allow_failures:
-    - python: 3.8-dev
+    - python: 3.8.0b4
