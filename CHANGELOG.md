@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## Unreleased - 2019-09-01
+### Changed
+- change the way ssl certificate validation is disabled
+
 ## [0.6.0] - 2019-09-01
 ### Changed
 - BREAKING - app token will not be stored in a file anymore
