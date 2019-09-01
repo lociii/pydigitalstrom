@@ -56,7 +56,8 @@ class DSClient(DSRequestHandler):
 
     async def get_session_token(self):
         data = await self.raw_request(
-            self.URL_SESSIONTOKEN.format(apptoken=self._apptoken))
+            self.URL_SESSIONTOKEN.format(apptoken=self._apptoken)
+        )
         if "result" not in data or "token" not in data["result"]:
             raise DSException("invalid api response")
         return data["result"]["token"]

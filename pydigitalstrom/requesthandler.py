@@ -48,4 +48,6 @@ class DSRequestHandler:
         :return aiohttp client session
         :rtype: aiohttp.client.ClientSession
         """
-        return aiohttp.client.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=False))
+        return aiohttp.client.ClientSession(
+            connector=aiohttp.TCPConnector(verify_ssl=False)
+        )
