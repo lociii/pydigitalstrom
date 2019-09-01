@@ -39,7 +39,7 @@ setup(
     packages=find_packages(),
     install_requires=requirements(),
     keywords=['digitalstrom', 'dss', 'ds'],
-    python_requires=">=3.5.3",
+    python_requires=">=3.6.0",
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',

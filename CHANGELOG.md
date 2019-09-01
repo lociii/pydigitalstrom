@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- BREAKING - app token will not be stored in a file anymore
+- BREAKING - DSClient splitted into multiple classes, app token retrieval standalone
+- updated python versions and dependencies
+- format source code using black
 
 ## [0.5.0] - 2019-02-09
 ### Changed
@@ -40,7 +45,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Support for AreaLight, basically converted scenes 0-9 to proper light devices for the area
 - Event listener that can update the AreaLight status
-### CHanged
+### Changed
 - BREAKING - devices etc are now initialized by DSClient.initialize() and DSClient getter functions are not async anymore
 
 ## [0.2.0] - 2018-09-11

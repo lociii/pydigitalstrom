@@ -35,20 +35,17 @@ ADD requirements.txt /app/
 ADD requirements_test.txt /app/
 
 # install required python versions
-RUN pyenv install 3.5.6
-RUN pyenv install 3.6.7
-RUN pyenv install 3.7.2
-RUN pyenv install 3.8-dev
+RUN pyenv install 3.6.9
+RUN pyenv install 3.7.4
+RUN pyenv install 3.8.0b4
 
-RUN pyenv global 3.5.6 3.6.8 3.7.2 3.8-dev
+RUN pyenv global 3.6.9 3.7.4 3.8.0b4
 RUN pyenv rehash
 
-RUN python3.5 -m pip install pip --upgrade
 RUN python3.6 -m pip install pip --upgrade
 RUN python3.7 -m pip install pip --upgrade
 RUN python3.8 -m pip install pip --upgrade
 
-RUN pip3.5 install -r /app/requirements_test.txt
 RUN pip3.6 install -r /app/requirements_test.txt
 RUN pip3.7 install -r /app/requirements_test.txt
 RUN pip3.8 install -r /app/requirements_test.txt

@@ -17,7 +17,8 @@ class DSEventListener(object):
     async def start(self):
         if not self.is_started:
             await self.client.event_subscribe(
-                event_id=self.event_id, event_name=self.event_name)
+                event_id=self.event_id, event_name=self.event_name
+            )
             self.is_started = True
             # Start task to call func periodically:
             self._task = asyncio.ensure_future(self._run(), loop=self.loop)
@@ -25,7 +26,8 @@ class DSEventListener(object):
     async def stop(self):
         if self.is_started:
             await self.client.event_unsubscribe(
-                event_id=self.event_id, event_name=self.event_name)
+                event_id=self.event_id, event_name=self.event_name
+            )
             self.is_started = False
             # Stop task and await it stopped:
             self._task.cancel()
@@ -35,7 +37,8 @@ class DSEventListener(object):
     async def _run(self):
         while True:
             data = await self.client.event_poll(
-                event_id=self.event_id, timeout=self.timeout)
+                event_id=self.event_id, timeout=self.timeout
+            )
             await self._handle_events(data=data)
             await asyncio.sleep(self.timeout, loop=self.loop)
 
@@ -43,11 +46,11 @@ class DSEventListener(object):
         self._callbacks.append(callback)
 
     async def _handle_events(self, data):
-        if 'events' not in data or not data['events']:
+        if "events" not in data or not data["events"]:
             return
 
-        for event in data['events']:
-            if 'name' not in event:
+        for event in data["events"]:
+            if "name" not in event:
                 continue
             for callback in self._callbacks:
                 await callback(event=event)
