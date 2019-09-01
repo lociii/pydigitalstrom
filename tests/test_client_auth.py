@@ -14,7 +14,7 @@ class TestClientAuth(aiounittest.AsyncTestCase):
         self.assertEqual(client._apartment_name, TEST_APARTMENT)
 
         self.assertIsNone(client._last_request)
-        self.assertIsNone(client._session_id)
+        self.assertIsNone(client._session_token)
         self.assertEqual(client._scenes, dict())
 
     async def test_get_session_token(self):
@@ -23,10 +23,10 @@ class TestClientAuth(aiounittest.AsyncTestCase):
             Mock(return_value=aiounittest.futurized(dict(result=dict(token=2736)))),
         ) as mock_raw_request:
             client = get_testclient()
-            sessiontoken = await client.get_session_token(apptoken=3627)
+            sessiontoken = await client.get_session_token()
             self.assertEqual(sessiontoken, 2736)
             mock_raw_request.assert_called_with(
-                "/json/system/loginApplication?loginToken=3627"
+                f"/json/system/loginApplication?loginToken={TEST_TOKEN}"
             )
 
         with patch(
@@ -35,7 +35,7 @@ class TestClientAuth(aiounittest.AsyncTestCase):
         ) as mock_raw_request:
             with self.assertRaises(DSException):
                 client = get_testclient()
-                await client.get_session_token(apptoken=3627)
+                await client.get_session_token()
             mock_raw_request.assert_called_with(
-                "/json/system/loginApplication?loginToken=3627"
+                f"/json/system/loginApplication?loginToken={TEST_TOKEN}"
             )

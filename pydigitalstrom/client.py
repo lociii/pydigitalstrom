@@ -25,7 +25,7 @@ class DSClient(DSRequestHandler):
         self._apartment_name = apartment_name
 
         self._last_request = None
-        self._session_id = None
+        self._session_token = None
         self._scenes = dict()
 
         super().__init__(host=host)
@@ -41,12 +41,12 @@ class DSClient(DSRequestHandler):
         # get a session id, they time out 60 seconds after the last request,
         # we go for 50 to be secure
         if not self._last_request or self._last_request < time.time() - 50:
-            self._session_id = await self.get_session_token(self._apptoken)
+            self._session_token = await self.get_session_token()
 
         # update last request timestamp and call api
         self._last_request = time.time()
         data = await self.raw_request(
-            url=url, params=dict(token=self._session_id), **kwargs
+            url=url, params=dict(token=self._session_token), **kwargs
         )
         if check_result:
             if "result" not in data:
@@ -54,8 +54,9 @@ class DSClient(DSRequestHandler):
             data = data["result"]
         return data
 
-    async def get_session_token(self, apptoken):
-        data = await self.raw_request(self.URL_SESSIONTOKEN.format(apptoken=apptoken))
+    async def get_session_token(self):
+        data = await self.raw_request(
+            self.URL_SESSIONTOKEN.format(apptoken=self._apptoken))
         if "result" not in data or "token" not in data["result"]:
             raise DSException("invalid api response")
         return data["result"]["token"]
