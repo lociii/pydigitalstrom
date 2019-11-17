@@ -20,38 +20,29 @@ class TestDevice(aiounittest.AsyncTestCase):
         device = DSDevice(client=get_testclient(), device_id=5, device_name="test")
         self.assertEqual(device.unique_id, 5)
 
-    async def test_request_plain_check_result_true(self):
+    async def test_request_enqueued(self):
         with patch(
-            "pydigitalstrom.client.DSClient.request",
+            "pydigitalstrom.commandstack.DSCommandStack.append",
             Mock(return_value=aiounittest.futurized(dict())),
-        ) as mock_request:
+        ) as mock_stack_append:
             device = DSDevice(client=get_testclient(), device_id=5, device_name="test")
-            await device.request(url="abc.de", check_result=True)
-            mock_request.assert_called_with(url="abc.de", check_result=True)
+            await device.request(url="abc.de")
+            mock_stack_append.assert_called_with(url="abc.de")
 
-    async def test_request_plain_check_result_false(self):
+    async def test_request_plain(self):
         with patch(
-            "pydigitalstrom.client.DSClient.request",
+            "pydigitalstrom.commandstack.DSCommandStack.append",
             Mock(return_value=aiounittest.futurized(dict())),
-        ) as mock_request:
+        ) as mock_stack_append:
             device = DSDevice(client=get_testclient(), device_id=5, device_name="test")
-            await device.request(url="abc.de", check_result=False)
-            mock_request.assert_called_with(url="abc.de", check_result=False)
+            await device.request(url="abc.de")
+            mock_stack_append.assert_called_with(url="abc.de")
 
-    async def test_request_with_data_check_result_true(self):
+    async def test_request_with_data(self):
         with patch(
-            "pydigitalstrom.client.DSClient.request",
+            "pydigitalstrom.commandstack.DSCommandStack.append",
             Mock(return_value=aiounittest.futurized(dict())),
-        ) as mock_request:
+        ) as mock_stack_append:
             device = DSDevice(client=get_testclient(), device_id=5, device_name="test")
-            await device.request(url="abc.de?{x}", x="hello", check_result=True)
-            mock_request.assert_called_with(url="abc.de?hello", check_result=True)
-
-    async def test_request_with_data_check_result_false(self):
-        with patch(
-            "pydigitalstrom.client.DSClient.request",
-            Mock(return_value=aiounittest.futurized(dict())),
-        ) as mock_request:
-            device = DSDevice(client=get_testclient(), device_id=5, device_name="test")
-            await device.request(url="abc.de?{x}", x="hello", check_result=False)
-            mock_request.assert_called_with(url="abc.de?hello", check_result=False)
+            await device.request(url="abc.de?{x}", x="hello")
+            mock_stack_append.assert_called_with(url="abc.de?hello")

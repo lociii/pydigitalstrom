@@ -23,9 +23,9 @@ class TestScene(aiounittest.AsyncTestCase):
 
     async def test_turn_on(self):
         with patch(
-            "pydigitalstrom.devices.scene.DSScene.request",
+            "pydigitalstrom.commandstack.DSCommandStack.append",
             Mock(return_value=aiounittest.futurized(dict())),
-        ) as mock_request:
+        ) as mock_stack_append:
             device = DSScene(
                 client=get_testclient(),
                 zone_id=1,
@@ -34,9 +34,8 @@ class TestScene(aiounittest.AsyncTestCase):
                 scene_name="scene",
             )
             await device.turn_on()
-            mock_request.assert_called_with(
+            mock_stack_append.assert_called_with(
                 url="/json/zone/callScene?id=1&sceneNumber=2&force=true",
-                check_result=False,
             )
 
 
@@ -59,9 +58,9 @@ class TestColorScene(aiounittest.AsyncTestCase):
 
     async def test_turn_on(self):
         with patch(
-            "pydigitalstrom.devices.scene.DSColorScene.request",
+            "pydigitalstrom.commandstack.DSCommandStack.append",
             Mock(return_value=aiounittest.futurized(dict())),
-        ) as mock_request:
+        ) as mock_stack_append:
             device = DSColorScene(
                 client=get_testclient(),
                 zone_id=1,
@@ -71,7 +70,6 @@ class TestColorScene(aiounittest.AsyncTestCase):
                 color=1,
             )
             await device.turn_on()
-            mock_request.assert_called_with(
+            mock_stack_append.assert_called_with(
                 url="/json/zone/callScene?id=1&sceneNumber=2&groupID=1&" "force=true",
-                check_result=False,
             )
