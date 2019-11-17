@@ -1,4 +1,4 @@
-FROM ubuntu:bionic
+FROM python:3.7-stretch
 
 # system settings
 ENV PYTHONUNBUFFERED 1
@@ -7,14 +7,12 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 # install packages
 RUN apt-get update
-RUN apt install -y software-properties-common vim curl git-core gcc make \
-    zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev libssl-dev wget  llvm\
-    libffi-dev build-essential libncurses5-dev libncursesw5-dev xz-utils \
-    tk-dev liblzma-dev
+RUN apt install -y git-core gcc make python3-dev python-virtualenv
 RUN apt-get clean
 
 # create app dir and user
-RUN mkdir /app && useradd -m app
+RUN mkdir /app
+RUN useradd -m app
 
 # change directory
 WORKDIR /app
@@ -22,34 +20,16 @@ WORKDIR /app
 # change user
 USER app
 
-# set home directory to environment
-ENV HOME /home/app
-
-# install and setup pyenv
-RUN git clone https://github.com/pyenv/pyenv.git ${HOME}/.pyenv
-ENV PYENV_ROOT ${HOME}/.pyenv
-ENV PATH ${PYENV_ROOT}/shims:${PYENV_ROOT}/bin:${PATH}
+# update path
+ENV PATH /home/app/venv/bin:$PATH
 
 # link requirements to container
 ADD requirements.txt /app/
 ADD requirements_test.txt /app/
 
-# install required python versions
-RUN pyenv install 3.6.9
-RUN pyenv install 3.7.4
-RUN pyenv install 3.8.0b4
-
-RUN pyenv global 3.6.9 3.7.4 3.8.0b4
-RUN pyenv rehash
-
-RUN python3.6 -m pip install pip --upgrade
-RUN python3.7 -m pip install pip --upgrade
-RUN python3.8 -m pip install pip --upgrade
-
-RUN pip3.6 install -r /app/requirements_test.txt
-RUN pip3.7 install -r /app/requirements_test.txt
-RUN pip3.8 install -r /app/requirements_test.txt
-
-RUN pip install tox
+RUN virtualenv --python=/usr/local/bin/python --system-site-packages /home/app/venv
+RUN pip install --force-reinstall setuptools
+RUN pip install pip --upgrade
+RUN pip install -r /app/requirements_test.txt
 
 ADD . /app/

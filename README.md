@@ -6,6 +6,7 @@
 # pydigitalstrom
 
 Run bundled docker
+
 ```bash
 $ docker-compose build
 
@@ -15,9 +16,14 @@ $ docker-compose exec python bash
 ```
 
 Run the tests locally
+
 ```bash
 $ docker-compose run --rm python tox
 ```
+
+# VSCode
+
+pydigitalstrom supports VSCode devcontainers for code completion and test runner
 
 ## Concept
 
