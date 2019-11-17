@@ -1,26 +1,27 @@
 import json
 
 import aiohttp
+import socket
 
 from pydigitalstrom.exceptions import DSCommandFailedException, DSRequestException
 
 
 class DSRequestHandler:
-    def __init__(self, host: str) -> None:
+    def __init__(self, host: str, port: str) -> None:
         self.host = host
+        self.port = port
 
     async def raw_request(self, url: str, **kwargs) -> str:
         """
         run a raw request against the digitalstrom server
 
-        :param str url: URL path to request
-        :param dict kwargs: kwargs to be forwarded to aiohttp.get
+        :param url: URL path to request
+        :param kwargs: kwargs to be forwarded to aiohttp.get
         :return: json response
-        :rtype: dict
         :raises: DSRequestException
         :raises: DSCommandFailedException
         """
-        url = "{host}{path}".format(host=self.host, path=url)
+        url = f"https://{self.host}:{self.port}{url}"
 
         # disable ssl verification for most servers miss valid certificates
         async with await self.get_aiohttp_session() as session:
@@ -40,14 +41,17 @@ class DSRequestHandler:
             except aiohttp.ClientError:
                 raise DSRequestException("request failed")
 
-    async def get_aiohttp_session(self) -> aiohttp.client.ClientSession:
+    async def get_aiohttp_session(
+        self, cookies: dict = None
+    ) -> aiohttp.client.ClientSession:
         """
         turn off ssl verification since most digitalstrom servers use
         self-signed certificates
 
-        :return aiohttp client session
-        :rtype: aiohttp.client.ClientSession
+        :param cookies: a dict of cookies to set on the connection
+        :return the initialized aiohttp client session
         """
         return aiohttp.client.ClientSession(
-            connector=aiohttp.TCPConnector(verify_ssl=False)
+            connector=aiohttp.TCPConnector(family=socket.AF_INET, ssl=False),
+            cookies=cookies,
         )

@@ -1,6 +1,8 @@
 # -*- coding: UTF-8 -*-
 import time
 
+import asyncio
+
 from pydigitalstrom.constants import SCENE_NAMES
 from pydigitalstrom.exceptions import (
     DSException,
@@ -20,7 +22,7 @@ class DSClient(DSRequestHandler):
 
     URL_SESSIONTOKEN = "/json/system/loginApplication?loginToken={apptoken}"
 
-    def __init__(self, host, apptoken, apartment_name):
+    def __init__(self, host: str, port: int, apptoken: str, apartment_name: str):
         self._apptoken = apptoken
         self._apartment_name = apartment_name
 
@@ -28,14 +30,17 @@ class DSClient(DSRequestHandler):
         self._session_token = None
         self._scenes = dict()
 
-        super().__init__(host=host)
+        from pydigitalstrom.commandstack import DSCommandStack
 
-    async def request(self, url: str, check_result=True, **kwargs):
+        self.stack = DSCommandStack(client=self)
+
+        super().__init__(host=host, port=port)
+
+    async def request(self, url: str, **kwargs):
         """
         run an authenticated request against the digitalstrom server
 
         :param str url:
-        :param bool check_result:
         :return:
         """
         # get a session id, they time out 60 seconds after the last request,
@@ -48,10 +53,6 @@ class DSClient(DSRequestHandler):
         data = await self.raw_request(
             url=url, params=dict(token=self._session_token), **kwargs
         )
-        if check_result:
-            if "result" not in data:
-                raise DSCommandFailedException("no result in server response")
-            data = data["result"]
         return data
 
     async def get_session_token(self):
@@ -66,14 +67,17 @@ class DSClient(DSRequestHandler):
         from pydigitalstrom.devices.scene import DSScene, DSColorScene
 
         # get scenes
-        data = await self.request(url=self.URL_SCENES)
+        response = await self.request(url=self.URL_SCENES)
+        if "result" not in response:
+            raise DSCommandFailedException("no result in server response")
+        result = response["result"]
 
         # set name for apartment zone
-        if "zone0" in data and "name" in data["zone0"]:
-            data["zone0"]["name"] = self._apartment_name
+        if "zone0" in result and "name" in result["zone0"]:
+            result["zone0"]["name"] = self._apartment_name
 
         # create scene objects
-        for zone in data.values():
+        for zone in result.values():
             # skip unnamed zones
             if not zone["name"]:
                 continue
@@ -123,44 +127,3 @@ class DSClient(DSRequestHandler):
 
     def get_scenes(self):
         return self._scenes
-
-    async def event_subscribe(self, event_id, event_name):
-        """
-        subscribe to an event for event_poll
-
-        :param int event_id: id of the event
-        :param str event_name: name of the event
-        :return: success state
-        :rtype: bool
-        :raises DSRequestException: on request failure
-        """
-        url = self.URL_EVENT_SUBSCRIBE.format(name=event_name, id=event_id)
-        await self.request(url, check_result=False)
-        return True
-
-    async def event_unsubscribe(self, event_id, event_name):
-        """
-        unsubscribe from an event for event_poll
-
-        :param int event_id: id of the event
-        :param str event_name: name of the event
-        :return: success state
-        :rtype: bool
-        :raises DSRequestException: on request failure
-        """
-        url = self.URL_EVENT_UNSUBSCRIBE.format(name=event_name, id=event_id)
-        await self.request(url, check_result=False)
-        return True
-
-    async def event_poll(self, event_id, timeout):
-        """
-        poll for actions on an event
-
-        :param int event_id: id of the event
-        :param int timeout: timeout in ms
-        :return: event data
-        :rtype: dict
-        :raises DSRequestException: on request failure
-        """
-        url = self.URL_EVENT_POLL.format(id=event_id, timeout=timeout * 1000)
-        return await self.request(url)

@@ -3,18 +3,25 @@ from unittest.mock import Mock, patch
 
 from pydigitalstrom.apptokenhandler import DSAppTokenHandler
 from pydigitalstrom.exceptions import DSException
-from tests.common import TEST_HOST, TEST_USERNAME, TEST_PASSWORD
+from tests.common import TEST_HOST, TEST_PORT, TEST_USERNAME, TEST_PASSWORD
 
 
 class TestAppTokenHandler(aiounittest.AsyncTestCase):
     def get_test_handler(
-        self, host=TEST_HOST, username=TEST_USERNAME, password=TEST_PASSWORD
+        self,
+        host=TEST_HOST,
+        port=TEST_PORT,
+        username=TEST_USERNAME,
+        password=TEST_PASSWORD,
     ):
-        return DSAppTokenHandler(host=host, username=username, password=password)
+        return DSAppTokenHandler(
+            host=host, port=port, username=username, password=password
+        )
 
     def test_initialize(self):
         handler = self.get_test_handler()
         self.assertEqual(handler.host, TEST_HOST)
+        self.assertEqual(handler.port, TEST_PORT)
         self.assertEqual(handler.username, TEST_USERNAME)
         self.assertEqual(handler.password, TEST_PASSWORD)
 

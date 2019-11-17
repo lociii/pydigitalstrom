@@ -36,8 +36,7 @@ class DSScene(DSDevice):
 
     async def turn_on(self):
         await self.request(
-            url=self.URL_TURN_ON.format(zone_id=self.zone_id, scene_id=self.scene_id),
-            check_result=False,
+            url=self.URL_TURN_ON.format(zone_id=self.zone_id, scene_id=self.scene_id)
         )
 
 
@@ -79,6 +78,5 @@ class DSColorScene(DSDevice):
         await self.request(
             url=self.URL_TURN_ON.format(
                 zone_id=self.zone_id, color=self.color, scene_id=self.scene_id
-            ),
-            check_result=False,
+            )
         )

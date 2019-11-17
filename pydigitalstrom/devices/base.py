@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 from pydigitalstrom.client import DSClient
 
 
@@ -23,7 +22,5 @@ class DSDevice(object):
     def unique_id(self):
         return self._id
 
-    async def request(self, url: str, check_result=True, **kwargs):
-        return await self._client.request(
-            url=url.format(**kwargs), check_result=check_result
-        )
+    async def request(self, url: str, **kwargs):
+        await self._client.stack.append(url=url.format(**kwargs))

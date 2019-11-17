@@ -1,5 +1,6 @@
-from pydigitalstrom.requesthandler import DSRequestHandler
+from typing import Optional
 
+from pydigitalstrom.requesthandler import DSRequestHandler
 from pydigitalstrom.exceptions import DSException
 
 
@@ -12,17 +13,15 @@ class DSAppTokenHandler(DSRequestHandler):
         "/json/system/enableToken?applicationToken={apptoken}" "&token={temptoken}"
     )
 
-    def __init__(self, host: str, username: str, password: str) -> None:
+    def __init__(self, host: str, port: int, username: str, password: str) -> None:
         self.username = username
         self.password = password
 
-        super().__init__(host=host)
+        super().__init__(host=host, port=port)
 
-    async def request_apptoken(self) -> str:
+    async def request_apptoken(self) -> Optional(str):
         """
         request a new app token from the server
-
-        :return: the app token
         """
         # get fresh app token and activate it
         apptoken = await self.get_application_token_from_server()
