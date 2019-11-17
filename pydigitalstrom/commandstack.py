@@ -1,5 +1,3 @@
-from typing import Optional
-
 import asyncio
 
 from pydigitalstrom.client import DSClient

@@ -19,7 +19,7 @@ class DSAppTokenHandler(DSRequestHandler):
 
         super().__init__(host=host, port=port)
 
-    async def request_apptoken(self) -> Optional(str):
+    async def request_apptoken(self) -> Optional[str]:
         """
         request a new app token from the server
         """
