@@ -22,7 +22,14 @@ class DSClient(DSRequestHandler):
 
     URL_SESSIONTOKEN = "/json/system/loginApplication?loginToken={apptoken}"
 
-    def __init__(self, host: str, port: int, apptoken: str, apartment_name: str):
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        apptoken: str,
+        apartment_name: str,
+        stack_delay: int = 500,
+    ):
         self._apptoken = apptoken
         self._apartment_name = apartment_name
 
@@ -32,7 +39,7 @@ class DSClient(DSRequestHandler):
 
         from pydigitalstrom.commandstack import DSCommandStack
 
-        self.stack = DSCommandStack(client=self)
+        self.stack = DSCommandStack(client=self, delay=stack_delay)
 
         super().__init__(host=host, port=port)
 
