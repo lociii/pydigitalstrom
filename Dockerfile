@@ -1,7 +1,8 @@
 FROM python:3.7.6-stretch
 
 # create app dir and user
-RUN mkdir /app && useradd -m app
+RUN mkdir /app
+RUN useradd -m app
 
 # change directory
 WORKDIR /app

@@ -6,6 +6,7 @@
 # pydigitalstrom
 
 Run bundled docker
+
 ```bash
 $ docker-compose build
 
@@ -15,9 +16,14 @@ $ docker-compose exec python bash
 ```
 
 Run the tests locally
+
 ```bash
 $ docker-compose run --rm python tox
 ```
+
+# VSCode
+
+pydigitalstrom supports VSCode devcontainers for code completion and test runner
 
 ## Concept
 
@@ -28,23 +34,34 @@ Currently user defined named scenes and generic scenes are supported.
 ## Example usage
 
 ```python
-# -*- coding: UTF-8 -*-
-import os
 import asyncio
 
+from pydigitalstrom.apptokenhandler import DSAppTokenHandler
 from pydigitalstrom.client import DSClient
 
-# disable certificate warnings - dss uses self signed
+
 async def test():
-    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config', 'auth.json')
-    client = DSClient(host='https://dss.local:8080', username='dssadmin', password='mySuperSecretPassword',
-                      config_path=config_path, apartment_name='Apartment')
+    # get activated app token
+    apptokenhandler = DSAppTokenHandler(
+        host="https://dss.local:8080",
+        username="dssadmin",
+        password="mySuperSecretPassword",
+    )
+    apptoken = await apptokenhandler.request_apptoken()
+
+    # connect the client and initialize the scenes cache
+    client = DSClient(
+        host="https://dss.local:8080", apptoken=apptoken, apartment_name="Apartment"
+    )
     await client.initialize()
+
+    # list and turn on all scenes
     scenes = client.get_scenes()
     for scene in scenes.values():
         print(scene.unique_id)
         print(scene.name)
-        await scene.turn_on()
+        # await scene.turn_on()
+
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(test())
@@ -55,27 +72,40 @@ loop.run_until_complete(test())
 Run an event listener to get scene call updates from digitalSTROM
 
 ```python
-# -*- coding: UTF-8 -*-
-import os
 import asyncio
 
+from pydigitalstrom.apptokenhandler import DSAppTokenHandler
 from pydigitalstrom.client import DSClient
 from pydigitalstrom.listener import DSEventListener
 
+
 async def callback(event):
-    print('callback called')
+    print("callback called")
     print(event)
+
 
 # disable certificate warnings - dss uses self signed
 async def test(loop):
-    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config', 'auth.json')
-    client = DSClient(host='https://dss.local:8080', username='dssadmin', password='mySuperSecretPassword',
-                      config_path=config_path, apartment_name='Apartment')
-    listener = DSEventListener(client=client, event_id=1, event_name='callScene', timeout=1, loop=loop)
+    # get activated app token
+    apptokenhandler = DSAppTokenHandler(
+        host="https://dss.local:8080",
+        username="dssadmin",
+        password="mySuperSecretPassword",
+    )
+    apptoken = await apptokenhandler.request_apptoken()
+
+    # connect listener and print all events coming in
+    client = DSClient(
+        host="https://dss.local:8080", apptoken=apptoken, apartment_name="Apartment"
+    )
+    listener = DSEventListener(
+        client=client, event_id=1, event_name="callScene", timeout=1, loop=loop
+    )
     await listener.start()
     listener.register(callback=callback)
     while True:
         await asyncio.sleep(1)
+
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(test(loop=loop))

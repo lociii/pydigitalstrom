@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Update test dependencies
 - BREAKING only support and test against the latest HomeAssistant Docker Python version, which is currently 3.7.6
 
+## [0.6.1] - 2019-09-01
+### Changed
+- change the way ssl certificate validation is disabled
+
+## [0.6.0] - 2019-09-01
+### Changed
+- BREAKING - app token will not be stored in a file anymore
+- BREAKING - DSClient splitted into multiple classes, app token retrieval standalone
+- updated python versions and dependencies
+- format source code using black
+
 ## [0.5.0] - 2019-02-09
 ### Changed
 - BREAKING - changed device unique_id to be underscore separated instead of dot separated
@@ -44,7 +55,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Support for AreaLight, basically converted scenes 0-9 to proper light devices for the area
 - Event listener that can update the AreaLight status
-### CHanged
+### Changed
 - BREAKING - devices etc are now initialized by DSClient.initialize() and DSClient getter functions are not async anymore
 
 ## [0.2.0] - 2018-09-11

@@ -1,0 +1,23 @@
+// See https://aka.ms/vscode-remote/devcontainer.json for format details.
+{
+    "name": "pydigitalstrom",
+    "context": "..",
+    "dockerFile": "../Dockerfile",
+    "runArgs": ["-e", "GIT_EDITOR=code --wait"],
+    "extensions": [
+      "ms-python.python",
+      "visualstudioexptteam.vscodeintellicode",
+      "esbenp.prettier-vscode"
+    ],
+    "settings": {
+      "python.pythonPath": "/home/app/venv/bin/python",
+      "python.linting.pylintEnabled": true,
+      "python.linting.enabled": true,
+      "python.formatting.provider": "black",
+      "editor.formatOnPaste": false,
+      "editor.formatOnSave": true,
+      "editor.formatOnType": true,
+      "files.trimTrailingWhitespace": true,
+      "terminal.integrated.shell.linux": "/bin/bash"
+    }
+  }
