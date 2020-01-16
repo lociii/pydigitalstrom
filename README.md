@@ -110,3 +110,13 @@ async def test(loop):
 loop = asyncio.get_event_loop()
 loop.run_until_complete(test(loop=loop))
 ```
+
+# Making a new release
+
+[bumpversion](https://github.com/peritus/bumpversion) is used to manage releases.
+
+Add your changes to the [CHANGELOG](./CHANGELOG.md), run
+```bash
+docker-compose run --rm python bumpversion <major|minor|patch>
+```
+then push (including tags).
