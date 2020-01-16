@@ -29,7 +29,6 @@ Currently user defined named scenes and generic scenes are supported.
 
 ```python
 # -*- coding: UTF-8 -*-
-import urllib3
 import os
 import asyncio
 
@@ -37,7 +36,6 @@ from pydigitalstrom.client import DSClient
 
 # disable certificate warnings - dss uses self signed
 async def test():
-    urllib3.disable_warnings()
     config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config', 'auth.json')
     client = DSClient(host='https://dss.local:8080', username='dssadmin', password='mySuperSecretPassword',
                       config_path=config_path, apartment_name='Apartment')
@@ -58,7 +56,6 @@ Run an event listener to get scene call updates from digitalSTROM
 
 ```python
 # -*- coding: UTF-8 -*-
-import urllib3
 import os
 import asyncio
 
@@ -71,7 +68,6 @@ async def callback(event):
 
 # disable certificate warnings - dss uses self signed
 async def test(loop):
-    urllib3.disable_warnings()
     config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config', 'auth.json')
     client = DSClient(host='https://dss.local:8080', username='dssadmin', password='mySuperSecretPassword',
                       config_path=config_path, apartment_name='Apartment')
