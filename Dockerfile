@@ -1,5 +1,7 @@
 FROM python:3.7.6-stretch
 
+RUN apt-get -y update && apt-get -y install git
+
 # create app dir and user
 RUN mkdir /app
 RUN useradd -m app
