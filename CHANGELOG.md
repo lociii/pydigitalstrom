@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Changed
+- Update aiohttp dependency, remove urllib3 dependency
+- Update test dependencies
+- BREAKING only support and test against the latest HomeAssistant Docker Python version, which is currently 3.7.6
+
 ## [0.6.1] - 2019-09-01
 ### Changed
 - change the way ssl certificate validation is disabled
