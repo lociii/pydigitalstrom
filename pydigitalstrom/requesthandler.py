@@ -55,6 +55,6 @@ class DSRequestHandler:
                 connector=aiohttp.TCPConnector(family=socket.AF_INET, ssl=False),
                 cookies=cookies,
             )
-        else:
+        elif cookies is not None:
             self.session._cookie_jar.update_cookies(cookies)
         return self.session
