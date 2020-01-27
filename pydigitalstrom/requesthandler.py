@@ -7,9 +7,10 @@ from pydigitalstrom.exceptions import DSCommandFailedException, DSRequestExcepti
 
 
 class DSRequestHandler:
-    def __init__(self, host: str, port: str) -> None:
+    def __init__(self, host: str, port: str, session: aiohttp.ClientSession = None):
         self.host = host
         self.port = port
+        self.session = session
 
     async def raw_request(self, url: str, **kwargs) -> str:
         """
@@ -41,9 +42,7 @@ class DSRequestHandler:
             except aiohttp.ClientError:
                 raise DSRequestException("request failed")
 
-    async def get_aiohttp_session(
-        self, cookies: dict = None
-    ) -> aiohttp.client.ClientSession:
+    async def get_aiohttp_session(self, cookies: dict = None) -> aiohttp.ClientSession:
         """
         turn off ssl verification since most digitalstrom servers use
         self-signed certificates
@@ -51,7 +50,11 @@ class DSRequestHandler:
         :param cookies: a dict of cookies to set on the connection
         :return the initialized aiohttp client session
         """
-        return aiohttp.client.ClientSession(
-            connector=aiohttp.TCPConnector(family=socket.AF_INET, ssl=False),
-            cookies=cookies,
-        )
+        if not self.session:
+            self.session = aiohttp.client.ClientSession(
+                connector=aiohttp.TCPConnector(family=socket.AF_INET, ssl=False),
+                cookies=cookies,
+            )
+        else:
+            self.session._cookie_jar.update_cookies(cookies)
+        return self.session

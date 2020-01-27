@@ -1,5 +1,7 @@
 from typing import Optional
 
+import aiohttp
+
 from pydigitalstrom.requesthandler import DSRequestHandler
 from pydigitalstrom.exceptions import DSException
 
@@ -13,11 +15,18 @@ class DSAppTokenHandler(DSRequestHandler):
         "/json/system/enableToken?applicationToken={apptoken}" "&token={temptoken}"
     )
 
-    def __init__(self, host: str, port: int, username: str, password: str) -> None:
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        username: str,
+        password: str,
+        session: aiohttp.ClientSession = None,
+    ) -> None:
         self.username = username
         self.password = password
 
-        super().__init__(host=host, port=port)
+        super().__init__(host=host, port=port, session=session)
 
     async def request_apptoken(self) -> Optional[str]:
         """

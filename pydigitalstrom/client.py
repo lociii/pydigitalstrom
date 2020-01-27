@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 import time
 
+import aiohttp
 import asyncio
 
 from pydigitalstrom.constants import SCENE_NAMES
@@ -29,6 +30,7 @@ class DSClient(DSRequestHandler):
         apptoken: str,
         apartment_name: str,
         stack_delay: int = 500,
+        session: aiohttp.ClientSession = None,
     ):
         self._apptoken = apptoken
         self._apartment_name = apartment_name
@@ -41,7 +43,7 @@ class DSClient(DSRequestHandler):
 
         self.stack = DSCommandStack(client=self, delay=stack_delay)
 
-        super().__init__(host=host, port=port)
+        super().__init__(host=host, port=port, session=session)
 
     async def request(self, url: str, **kwargs):
         """
