@@ -30,7 +30,7 @@ class DSClient(DSRequestHandler):
         apptoken: str,
         apartment_name: str,
         stack_delay: int = 500,
-        session: aiohttp.ClientSession = None,
+        loop: asyncio.AbstractEventLoop = None,
     ):
         self._apptoken = apptoken
         self._apartment_name = apartment_name
@@ -43,7 +43,7 @@ class DSClient(DSRequestHandler):
 
         self.stack = DSCommandStack(client=self, delay=stack_delay)
 
-        super().__init__(host=host, port=port, session=session)
+        super().__init__(host=host, port=port, loop=loop)
 
     async def request(self, url: str, **kwargs):
         """

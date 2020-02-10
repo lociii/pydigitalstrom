@@ -1,16 +1,17 @@
 import json
 
 import aiohttp
+import asyncio
 import socket
 
 from pydigitalstrom.exceptions import DSCommandFailedException, DSRequestException
 
 
 class DSRequestHandler:
-    def __init__(self, host: str, port: str, session: aiohttp.ClientSession = None):
+    def __init__(self, host: str, port: str, loop: asyncio.AbstractEventLoop = None):
         self.host = host
         self.port = port
-        self.session = session
+        self.loop = loop
 
     async def raw_request(self, url: str, **kwargs) -> str:
         """
@@ -50,11 +51,8 @@ class DSRequestHandler:
         :param cookies: a dict of cookies to set on the connection
         :return the initialized aiohttp client session
         """
-        if not self.session:
-            self.session = aiohttp.client.ClientSession(
-                connector=aiohttp.TCPConnector(family=socket.AF_INET, ssl=False),
-                cookies=cookies,
-            )
-        elif cookies is not None:
-            self.session._cookie_jar.update_cookies(cookies)
-        return self.session
+        return aiohttp.ClientSession(
+            connector=aiohttp.TCPConnector(family=socket.AF_INET, ssl=False),
+            cookies=cookies,
+            loop=self.loop,
+        )

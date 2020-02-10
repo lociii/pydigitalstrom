@@ -1,6 +1,7 @@
 from typing import Optional
 
 import aiohttp
+import asyncio
 
 from pydigitalstrom.requesthandler import DSRequestHandler
 from pydigitalstrom.exceptions import DSException
@@ -21,12 +22,12 @@ class DSAppTokenHandler(DSRequestHandler):
         port: int,
         username: str,
         password: str,
-        session: aiohttp.ClientSession = None,
+        loop: asyncio.AbstractEventLoop = None,
     ) -> None:
         self.username = username
         self.password = password
 
-        super().__init__(host=host, port=port, session=session)
+        super().__init__(host=host, port=port, loop=loop)
 
     async def request_apptoken(self) -> Optional[str]:
         """
