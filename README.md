@@ -3,6 +3,11 @@
 [![Coverage Status](https://coveralls.io/repos/github/lociii/pydigitalstrom/badge.svg?branch=master)](https://coveralls.io/github/lociii/pydigitalstrom?branch=master)
 [![MIT Licence](https://badges.frapsoft.com/os/mit/mit.svg?v=103)](https://opensource.org/licenses/mit-license.php)
 
+# DEPRECATED
+
+pydigitalstrom is deprecated as I'm no longer using their home control system.
+Feel free to contact me if you'd like to take over.
+
 # pydigitalstrom
 
 Run bundled docker
