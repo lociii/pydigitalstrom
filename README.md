@@ -1,3 +1,5 @@
+[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
+
 [![PyPI version](https://badge.fury.io/py/pydigitalstrom.svg)](https://pypi.org/project/pydigitalstrom)
 [![Travis CI build status](https://travis-ci.org/lociii/pydigitalstrom.svg)](https://travis-ci.org/lociii/pydigitalstrom)
 [![Coverage Status](https://coveralls.io/repos/github/lociii/pydigitalstrom/badge.svg?branch=master)](https://coveralls.io/github/lociii/pydigitalstrom?branch=master)
